@@ -1,0 +1,180 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "stain-benchmark"
+version = "0.1.0"
+description = "A label-free, model-agnostic validity-and-monitoring layer for deployed computational pathology pipelines"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Abhishek Thakur", email = "a.thakur5690@gmail.com"}
+]
+maintainers = [
+    {name = "Abhishek Thakur", email = "a.thakur5690@gmail.com"}
+]
+keywords = [
+    "digital-pathology",
+    "stain-normalization",
+    "domain-adaptation",
+    "deep-learning",
+    "medical-imaging",
+    "benchmark",
+    "computational-pathology"
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Healthcare Industry",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Image Processing",
+    "Topic :: Scientific/Engineering :: Medical Science Apps.",
+]
+requires-python = ">=3.10"
+dependencies = [
+    "torch>=2.0.0",
+    "torchvision>=0.15.0",
+    "pytorch-lightning>=2.0.0",
+    "torchmetrics>=1.0.0",
+    "numpy>=1.24.0",
+    "scipy>=1.10.0",
+    "scikit-learn>=1.3.0",
+    "scikit-image>=0.21.0",
+    "pandas>=2.0.0",
+    "opencv-python>=4.8.0",
+    "Pillow>=10.0.0",
+    "openslide-python>=1.3.0",
+    "albumentations>=1.3.0",
+    "omegaconf>=2.3.0",
+    "hydra-core>=1.3.0",
+    "wandb>=0.15.0",
+    "rich>=13.0.0",
+    "tqdm>=4.65.0",
+    "matplotlib>=3.7.0",
+    "seaborn>=0.12.0",
+    "requests>=2.31.0",
+    "gdown>=4.7.0",
+    "joblib>=1.3.0",
+    "segmentation-models-pytorch>=0.3.3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "black>=23.7.0",
+    "isort>=5.12.0",
+    "flake8>=6.1.0",
+    "mypy>=1.5.0",
+]
+notebooks = [
+    "jupyter>=1.0.0",
+    "ipykernel>=6.25.0",
+    "ipywidgets>=8.1.0",
+]
+all = [
+    "stain-benchmark[dev,notebooks]",
+]
+
+[project.urls]
+Homepage = "https://github.com/abhithakur/stain-robustness-benchmark"
+Documentation = "https://github.com/abhithakur/stain-robustness-benchmark#readme"
+Repository = "https://github.com/abhithakur/stain-robustness-benchmark"
+Issues = "https://github.com/abhithakur/stain-robustness-benchmark/issues"
+
+[project.scripts]
+stain-benchmark = "stain_benchmark.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+# =============================================================================
+# Tool Configurations
+# =============================================================================
+
+[tool.black]
+line-length = 100
+target-version = ['py310', 'py311']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+    \.eggs
+    | \.git
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | _build
+    | buck-out
+    | build
+    | dist
+    | data
+    | results
+    | checkpoints
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
+known_first_party = ["stain_benchmark"]
+skip_glob = ["data/*", "results/*", "checkpoints/*"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+exclude = [
+    "data/",
+    "results/",
+    "checkpoints/",
+    "notebooks/",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",
+    "--tb=short",
+    "--strict-markers",
+    "-ra",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "gpu: marks tests that require GPU",
+    "integration: marks integration tests",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::UserWarning",
+]
+
+[tool.coverage.run]
+source = ["src/stain_benchmark"]
+branch = true
+omit = [
+    "*/tests/*",
+    "*/__init__.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]

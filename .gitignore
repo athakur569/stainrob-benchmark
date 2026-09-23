@@ -1,0 +1,169 @@
+# =============================================================================
+# Stain Robustness Benchmark - Git Ignore
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Data Files (CRITICAL - Never commit WSIs or tiles!)
+# -----------------------------------------------------------------------------
+# Raw downloaded WSIs (partial + complete)
+raw/
+# Large binary formats
+*.svs
+*.tif
+*.tiff
+*.ndpi
+*.mrxs
+*.vms
+*.vmu
+*.scn
+*.bif
+*.h5
+*.hdf5
+# Tile/patch directories (created by tiling.py)
+data/tiles/
+data/patches/
+data/*/tiles/
+data/*/patches/
+data/*/slides/
+# data/tcga/metadata.csv and data/tcga/gdc_manifest.txt ARE versioned (small, critical)
+
+# -----------------------------------------------------------------------------
+# Results and Outputs
+# -----------------------------------------------------------------------------
+results/
+outputs/
+figures/
+logs/
+
+# -----------------------------------------------------------------------------
+# Model Checkpoints
+# -----------------------------------------------------------------------------
+checkpoints/
+*.ckpt
+*.pt
+*.pth
+*.pkl
+*.joblib
+wandb/
+mlruns/
+
+# -----------------------------------------------------------------------------
+# Python
+# -----------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# -----------------------------------------------------------------------------
+# Virtual Environments
+# -----------------------------------------------------------------------------
+venv/
+ENV/
+env/
+.venv/
+.conda/
+conda-env/
+
+# -----------------------------------------------------------------------------
+# IDE and Editors
+# -----------------------------------------------------------------------------
+.idea/
+.vscode/settings.json
+.vscode/launch.json
+# .vscode/extensions.json is kept (recommends extensions to collaborators)
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# -----------------------------------------------------------------------------
+# Jupyter Notebooks
+# -----------------------------------------------------------------------------
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+notebooks/.ipynb_checkpoints/
+
+# -----------------------------------------------------------------------------
+# Testing and Coverage
+# -----------------------------------------------------------------------------
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.hypothesis/
+
+# -----------------------------------------------------------------------------
+# OS Generated
+# -----------------------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# -----------------------------------------------------------------------------
+# Temporary Files
+# -----------------------------------------------------------------------------
+*.tmp
+*.temp
+*.bak
+*.backup
+*.log
+*.cache
+
+# -----------------------------------------------------------------------------
+# Secrets and Credentials (NEVER commit!)
+# -----------------------------------------------------------------------------
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+secrets.yaml
+credentials.json
+
+# -----------------------------------------------------------------------------
+# Documentation Build
+# -----------------------------------------------------------------------------
+docs/_build/
+site/
+
+# -----------------------------------------------------------------------------
+# Misc
+# -----------------------------------------------------------------------------
+*.manifest
+*.spec
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Claude Code local settings (personal, not shared)
+.claude/
+
+# Workspace file (personal)
+*.code-workspace
