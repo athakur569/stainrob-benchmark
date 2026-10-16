@@ -1,0 +1,54 @@
+# Tiling + split configuration: CAMELYON17 (Paper 1). Same schema for every dataset (TCGA next).
+# Frozen and hashed with the tiles before any experiment runs.
+dataset: camelyon17
+root: /media/abhi/camelyon17                       # dataset root; metadata `file` paths are relative to it
+metadata: /media/abhi/camelyon17/metadata.csv      # built by scripts/download_camelyon17.py --create-metadata
+annotations_dir: /media/abhi/camelyon17/raw/annotations   # ASAP XML outlines for role=annotated slides
+out_dir: /media/abhi/camelyon17/derived/tiles_v1
+
+# Every tile covers the same physical area regardless of scanner.
+target_mpp: 0.5          # microns per pixel (20x)
+tile_px: 256             # -> 128 x 128 um per tile
+overview_um: 8.0         # resolution of the planning overview (microns per pixel)
+
+# Tissue detection on the overview (HSV): stained pixels, not the black unscanned void.
+tissue:
+  sat_otsu_floor: 15     # per-slide Otsu threshold on saturation, clamped to [floor, ceil] (0-255)
+  sat_otsu_ceil: 60
+  val_min: 80            # darker than this = unscanned black void OR pen ink (stars on center-1
+                         # slides: V 29-55); real tissue's 5th percentile V is >=99 on sampled slides
+  min_tissue_frac: 0.70  # tile must be >= 70% tissue
+
+# Labels (agreed with Abhi, 2026-10-16)
+labels:
+  tumour_min_frac: 0.50  # tumour tile: >= 50% of area inside a Tumor outline
+  normal_margin_um: 128  # normal tile on an annotated slide: no outline within one tile width
+  slide_roles:           # which slides are used, by stage and whether outlines exist
+    negative: normal_only            # pN0 node slides: every tissue tile is normal
+    annotated_macro_micro: both      # outlined macro/micro slides: tumour + tumour-free areas
+  excluded: [itc, unannotated_macro, unannotated_micro]
+
+# Pass 2 sampling (agreed with Abhi, 2026-10-16)
+sampling:
+  seed: 42               # numpy default_rng; recorded so the tile set is reproducible
+  tumour_cap_per_slide: 500
+  normal_ratio: 1.0      # normals per center = tumour tiles per center (1:1)
+                         # split equally across every slide with normal candidates, random within slide
+
+# Step 3 QC (chosen 2026-10-16 after reviewing the lowest-scoring tiles)
+qc:
+  blur_min: 15.0         # Laplacian variance; below = featureless/out-of-focus (14 of 17 from one slide)
+  entropy_min: 4.5       # grayscale bits; below = uniform smear. Real pale tumour/stroma sits >= ~4.9
+  # Full-resolution tissue fraction is NOT used: dark dense lymphoid tissue scores low on it
+  # (nuclei fall under val_min), so filtering would bias against centers 1 and 3.
+  # Effect: 17 / 11,780 tiles flagged (0.14%), 0 tumour tiles, max 1.2% of any center-class.
+
+# Step 4 splits: run through scripts/create_splits.py on <out_dir>/split_input.csv (see tiling_extract.py)
+splits:
+  project_id: CAMELYON17
+  split_version: v1
+  group_column: center          # split within each institution; LOCO folds = hold out one center
+  patient_label_rule: any       # tumour patient if any node has tumour tiles
+  weight_column: tumour_tiles   # test split carries >= min_test_weight tumour tiles per center
+  min_test_weight: 100
+  ratios: [0.70, 0.15, 0.15]
