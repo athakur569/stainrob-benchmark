@@ -162,7 +162,7 @@ site/
 pip-log.txt
 pip-delete-this-directory.txt
 
-# Claude Code local settings (personal, not shared)
+# Local tool settings
 .claude/
 
 # Workspace file (personal)

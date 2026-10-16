@@ -1,9 +1,9 @@
 """
-Patient-Level Data Splitting for CAMELYON16 and TCGA
+Patient-Level Data Splitting for TCGA and CAMELYON17
 =============================================================================
 CRITICAL: This module handles data splitting at the PATIENT level to prevent
 data leakage and address the repeated measures problem.
-CAMELYON16: slide_id == patient_id (1:1 mapping)
+One slide per patient: slide_id == patient_id (1:1 mapping)
     → Simple case, split by slide_id
 TCGA / CAMELYON17: patient_id → multiple slide_ids (1:N mapping)
     → REPEATED MEASURES PROBLEM!
@@ -94,14 +94,14 @@ def create_patient_splits(
     min_test_weight: float = 0.0,
 ) -> dict[str, list[str]]:
     """
-    Create strict patient-level splits for CAMELYON16 / TCGA / CAMELYON17 with:
+    Create strict patient-level splits for TCGA / CAMELYON17 with:
       - optional frozen patient universe (membership + ordering locked)
       - deterministic ordering (independent of CSV/API row order)
       - derived seed from experiment identity
       - overwrite guard (refuses to overwrite existing splits unless force=True)
     IMPORTANT:
       - TCGA: set patient_id_column='patient_id' (or your column)
-      - CAMELYON16: leave patient_id_column=None
+      - one slide per patient: leave patient_id_column=None
       - CAMELYON17: set patient_id_column='patient_id' (or your column)
 
     Institution grouping (group_column, e.g. 'center' or 'tss'):
@@ -145,7 +145,7 @@ def create_patient_splits(
         raise ValueError(f"Column '{label_column}' not found. Available: {list(df.columns)}")
     if patient_id_column is None:
         patient_id_column = slide_id_column
-        logger.info("No patient_id_column specified. Assuming slide_id == patient_id (CAMELYON16 mode)")
+        logger.info("No patient_id_column specified. Assuming slide_id == patient_id (one-slide-per-patient mode)")
         # Splitting by slide is only safe if no patient-like column shows repeated slides.
         for cand in ("patient_id", "case_id", "patient", "case", "submitter_id"):
             if warn_repeated_measures and cand in df.columns and cand != slide_id_column:
@@ -699,7 +699,7 @@ if __name__ == "__main__":
         format="%(asctime)s | %(levelname)s | %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
-    parser = argparse.ArgumentParser(description="Create patient-level splits for CAMELYON16 / TCGA / CAMELYON17")
+    parser = argparse.ArgumentParser(description="Create patient-level splits for TCGA / CAMELYON17")
     parser.add_argument("--metadata", type=str, required=True,
                         help="Path to metadata CSV with slide_id, patient_id (optional), and label")
     parser.add_argument("--output", type=str, required=True,

@@ -6,7 +6,7 @@ This wrapper always enables the benchmark-grade determinism features exposed by
 src/stain_benchmark/data/splitting.py unless explicitly disabled.
 
 Goals:
-- Works cleanly for TCGA, CAMELYON16, CAMELYON17, or similar metadata tables
+- Works cleanly for TCGA, CAMELYON17, or similar metadata tables
 - Auto-detects patient_id column when possible
 - Auto-generates and locks a frozen patient universe file
 - Always derives a stable seed by default

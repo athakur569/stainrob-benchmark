@@ -3,7 +3,6 @@
 Download / register CAMELYON17 dataset and create metadata.
 
 Design goals:
-- same overall philosophy as the existing CAMELYON16 script
 - manual-download friendly
 - WSI-first (no pre-tiling)
 - metadata ready for later local splits

@@ -6,7 +6,7 @@ These tests verify the most critical component of the benchmark:
 ensuring NO DATA LEAKAGE between train/val/test splits.
 
 Includes tests for:
-1. CAMELYON16: 1:1 slide-patient mapping
+1. One slide per patient: 1:1 slide-patient mapping
 2. TCGA: Multiple slides per patient (repeated measures)
 3. Patient-level aggregation
 
@@ -46,7 +46,7 @@ from stain_benchmark.data.splitting import (
 @pytest.fixture
 def sample_metadata_camelyon(tmp_path: Path) -> Path:
     """
-    Create CAMELYON16-style metadata where slide_id == patient_id.
+    Create one-slide-per-patient metadata where slide_id == patient_id.
 
     This represents the simple case with 1:1 mapping.
     """
@@ -224,12 +224,12 @@ class TestVerifyNoLeakage:
 
 
 # =============================================================================
-# Tests for CAMELYON16 (1:1 slide-patient)
+# Tests for one slide per patient (1:1 slide-patient)
 # =============================================================================
 
 
 class TestCreatePatientSplitsCAMELYON:
-    """Tests for CAMELYON16-style splitting (slide_id == patient_id)."""
+    """Tests for one-slide-per-patient splitting (slide_id == patient_id)."""
 
     def test_creates_correct_number_of_splits(
         self, sample_metadata_camelyon: Path, tmp_path: Path
@@ -246,7 +246,7 @@ class TestCreatePatientSplitsCAMELYON:
             seed=42,
         )
 
-        # Should have both slide and patient keys (identical for CAMELYON16)
+        # Should have both slide and patient keys (identical when one slide per patient)
         assert "train" in splits
         assert "val" in splits
         assert "test" in splits
@@ -739,7 +739,7 @@ class TestIntegration:
     def test_full_camelyon_workflow(
         self, sample_metadata_camelyon: Path, tmp_path: Path
     ):
-        """Test complete CAMELYON16 workflow."""
+        """Test complete one-slide-per-patient workflow."""
         output_dir = tmp_path / "splits"
 
         # 1. Create splits
