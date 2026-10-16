@@ -39,7 +39,7 @@ def test_wilcoxon_matches_scipy():
 
 def test_wilcoxon_cannot_reach_005_with_three_pairs():
     # With 3 seeds the smallest two-sided exact p-value is 2 / 2**3 = 0.25, even when
-    # every pair moves the same way. See docs/issues_log.md ISS-036.
+    # every pair moves the same way. See docs/research_log.md ISS-036.
     result = wilcoxon_test([0.80, 0.81, 0.82], [0.90, 0.92, 0.95])
     assert result.p_value == pytest.approx(0.25)
     assert not result.significant
