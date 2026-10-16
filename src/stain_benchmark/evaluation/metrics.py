@@ -641,6 +641,130 @@ def compare_generalization_gaps(
 
 
 # =============================================================================
+# Calibration and Per-Institution Metrics (ported from pathology-eval-suite)
+# =============================================================================
+
+
+@dataclass
+class CalibrationMetrics:
+    """Expected Calibration Error plus the binned reliability curve."""
+
+    ece: float
+    bin_confidence: np.ndarray  # mean predicted P(tumour) per bin
+    bin_frequency: np.ndarray  # observed fraction of tumour per bin
+    bin_count: np.ndarray
+
+    def to_dict(self) -> Dict[str, float]:
+        """Convert to dictionary (excluding arrays)."""
+        return {"ece": self.ece}
+
+
+def compute_calibration(
+    y_true: np.ndarray,
+    y_prob: np.ndarray,
+    n_bins: int = 15,
+) -> CalibrationMetrics:
+    """
+    Compute the Expected Calibration Error of positive-class probabilities.
+
+    Probabilities are grouped into ``n_bins`` equal-width bins; ECE is the
+    count-weighted mean of |observed tumour fraction − mean predicted P(tumour)|.
+    0 means perfectly calibrated. Empty bins report 0 and do not contribute.
+
+    Args:
+        y_true: Ground truth labels (0 or 1).
+        y_prob: Predicted probabilities for the positive class.
+        n_bins: Number of equal-width bins over [0, 1].
+
+    Returns:
+        CalibrationMetrics object.
+    """
+    y_true = np.asarray(y_true, dtype=float).flatten()
+    y_prob = np.asarray(y_prob, dtype=float).flatten()
+    if y_true.shape != y_prob.shape or len(y_true) == 0:
+        raise ValueError("y_true and y_prob must be non-empty and the same length")
+
+    edges = np.linspace(0.0, 1.0, n_bins + 1)
+    bins = np.digitize(y_prob, edges[1:-1])  # 0..n_bins-1; p = 1.0 lands in the last bin
+    count = np.bincount(bins, minlength=n_bins)
+    safe = np.maximum(count, 1)
+    confidence = np.bincount(bins, weights=y_prob, minlength=n_bins) / safe
+    frequency = np.bincount(bins, weights=y_true, minlength=n_bins) / safe
+
+    ece = float(np.sum(count * np.abs(frequency - confidence)) / len(y_true))
+    return CalibrationMetrics(
+        ece=ece, bin_confidence=confidence, bin_frequency=frequency, bin_count=count
+    )
+
+
+@dataclass
+class InstitutionMetrics:
+    """Per-institution AUC and the fairness gap across institutions."""
+
+    per_institution: Dict[str, float]
+    skipped: Dict[str, str]  # institution -> reason it has no AUC
+    fairness_gap: float  # max − min AUC over scored institutions (nan if < 2)
+    macro_mean: float
+    macro_std: float
+
+    def to_dict(self) -> Dict[str, float]:
+        """Convert to dictionary (summary values plus one auc_<institution> per site)."""
+        d = {
+            "fairness_gap": self.fairness_gap,
+            "macro_mean_auc": self.macro_mean,
+            "macro_std_auc": self.macro_std,
+        }
+        d.update({f"auc_{k}": v for k, v in self.per_institution.items()})
+        return d
+
+
+def compute_institution_metrics(
+    y_true: np.ndarray,
+    y_prob: np.ndarray,
+    institution: np.ndarray,
+    min_samples: int = 20,
+) -> InstitutionMetrics:
+    """
+    Compute AUC separately for each institution and the gap between best and worst.
+
+    Institutions with fewer than ``min_samples`` samples or only one class are
+    reported in ``skipped`` rather than silently dropped, so a missing site is visible.
+
+    Args:
+        y_true: Ground truth labels (0 or 1).
+        y_prob: Predicted probabilities for the positive class.
+        institution: Institution (center / TSS) for each sample.
+        min_samples: Minimum samples for an institution to get an AUC.
+
+    Returns:
+        InstitutionMetrics object.
+    """
+    y_true = np.asarray(y_true).flatten()
+    y_prob = np.asarray(y_prob).flatten()
+    institution = np.asarray(institution).flatten()
+
+    per_inst: Dict[str, float] = {}
+    skipped: Dict[str, str] = {}
+    for inst in np.unique(institution):
+        mask = institution == inst
+        if mask.sum() < min_samples:
+            skipped[str(inst)] = f"{int(mask.sum())} samples < {min_samples}"
+        elif len(np.unique(y_true[mask])) < 2:
+            skipped[str(inst)] = "only one class present"
+        else:
+            per_inst[str(inst)] = float(roc_auc_score(y_true[mask], y_prob[mask]))
+
+    aucs = np.array(list(per_inst.values()))
+    return InstitutionMetrics(
+        per_institution=per_inst,
+        skipped=skipped,
+        fairness_gap=float(aucs.max() - aucs.min()) if len(aucs) >= 2 else float("nan"),
+        macro_mean=float(aucs.mean()) if len(aucs) else float("nan"),
+        macro_std=float(aucs.std()) if len(aucs) else float("nan"),
+    )
+
+
+# =============================================================================
 # Aggregation Functions
 # =============================================================================
 
