@@ -32,6 +32,8 @@ from rich.console import Console
 from rich.progress import BarColumn, Progress, TextColumn
 from rich.table import Table
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+
 console = Console()
 logger = logging.getLogger(__name__)
 
@@ -46,7 +48,6 @@ CAMELYON17_INFO = {
     ),
 }
 
-VALID_WSI_SUFFIXES = {".tif", ".tiff", ".svs"}
 
 
 def check_disk_space(path: Path, required_gb: float) -> bool:
@@ -85,140 +86,25 @@ def extract_archive(archive_path: Path, output_dir: Path) -> bool:
         return False
 
 
-def infer_split_from_path(path_str: str) -> str:
-    p = path_str.lower()
-    if "training" in p or "/train" in p:
-        return "train_source"
-    if "test" in p:
-        return "test_source"
-    if "validation" in p or "val" in p:
-        return "val_source"
-    return "unknown"
+def create_metadata(root: Path, output_path: Path) -> None:
+    """Write the common-schema slide table (see stain_benchmark.data.metadata)."""
+    from stain_benchmark.data.metadata import build_metadata
 
-
-def infer_label_from_path(path_str: str) -> int:
-    p = path_str.lower()
-    # Conservative: only infer when obvious
-    if "normal" in p:
-        return 0
-    if "tumor" in p or "lesion" in p or "metast" in p:
-        return 1
-    return -1
-
-
-def parse_camelyon17_ids(stem: str) -> tuple[str, str]:
-    """
-    Try to derive patient_id and node_id from common CAMELYON17-style names.
-
-    Examples this handles safely:
-    - patient_025_node_4
-    - center_0_patient_025_node_4
-    - patient025_node4
-
-    Returns:
-        patient_id, node_id
-    """
-    tokens = stem.replace("-", "_").split("_")
-    patient_id = ""
-    node_id = ""
-
-    for i, tok in enumerate(tokens):
-        low = tok.lower()
-        if low == "patient" and i + 1 < len(tokens):
-            patient_id = f"patient_{tokens[i + 1]}"
-        elif low.startswith("patient") and len(low) > len("patient"):
-            suffix = tok[len("patient"):]
-            if suffix:
-                patient_id = f"patient_{suffix}"
-
-        if low == "node" and i + 1 < len(tokens):
-            node_id = f"node_{tokens[i + 1]}"
-        elif low.startswith("node") and len(low) > len("node"):
-            suffix = tok[len("node"):]
-            if suffix:
-                node_id = f"node_{suffix}"
-
-    if not patient_id:
-        # Fallback: group by full slide stem to avoid accidental leakage
-        patient_id = stem
-
-    return patient_id, node_id
-
-
-def parse_center_from_path_or_name(path_str: str, stem: str) -> str:
-    path_lower = path_str.lower()
-    stem_lower = stem.lower()
-
-    for text in (path_lower, stem_lower):
-        if "center_" in text:
-            idx = text.find("center_")
-            frag = text[idx:].split("/")[0].split("_")
-            if len(frag) >= 2:
-                return f"center_{frag[1]}"
-    return ""
-
-
-def create_metadata(data_dir: Path, output_path: Path) -> None:
-    console.print("[blue]Creating CAMELYON17 metadata...[/blue]")
-
-    records: list[dict[str, object]] = []
-
-    for wsi_path in data_dir.rglob("*"):
-        if not wsi_path.is_file():
-            continue
-        if wsi_path.suffix.lower() not in VALID_WSI_SUFFIXES:
-            continue
-
-        slide_id = wsi_path.stem
-        patient_id, node_id = parse_camelyon17_ids(slide_id)
-        path_str = str(wsi_path)
-        split_source = infer_split_from_path(path_str)
-        label = infer_label_from_path(path_str)
-        center_id = parse_center_from_path_or_name(path_str, slide_id)
-
-        records.append(
-            {
-                "dataset_id": "camelyon17",
-                "project_id": "CAMELYON17",
-                "slide_id": slide_id,
-                "patient_id": patient_id,
-                "node_id": node_id,
-                "center_id": center_id,
-                "label": label,
-                "source_split": split_source,
-                "path": path_str,
-                "file_ext": wsi_path.suffix.lower(),
-            }
-        )
-
-    if not records:
-        console.print("[yellow]Warning: No WSI files found (.tif/.tiff/.svs).[/yellow]")
-        return
-
-    df = pd.DataFrame(records).sort_values(["patient_id", "slide_id"]).reset_index(drop=True)
+    console.print("[blue]Creating CAMELYON17 metadata from stages.csv and annotations...[/blue]")
+    df = build_metadata("camelyon17", root)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(output_path, index=False)
-
     console.print(f"[green]✓[/green] Created metadata: {output_path}")
 
     table = Table(title="CAMELYON17 Metadata Summary")
     table.add_column("Metric", style="cyan")
     table.add_column("Value", style="green")
     table.add_row("Total slides", str(len(df)))
-    table.add_row("Unique patients/groups", str(df["patient_id"].nunique()))
-    table.add_row("Label=1", str((df["label"] == 1).sum()))
-    table.add_row("Label=0", str((df["label"] == 0).sum()))
-    table.add_row("Label=-1", str((df["label"] == -1).sum()))
-    table.add_row("Source train", str((df["source_split"] == "train_source").sum()))
-    table.add_row("Source test", str((df["source_split"] == "test_source").sum()))
+    table.add_row("Patients", str(df["patient_id"].nunique()))
+    table.add_row("Centers", str(df["center"].nunique()))
+    for role, n in df["role"].value_counts().items():
+        table.add_row(f"role={role}", str(n))
     console.print(table)
-
-    if (df["label"] == -1).any():
-        console.print(
-            "\n[yellow]Note:[/yellow] Some rows have label=-1 because labels were not "
-            "safely inferable from filenames/paths alone. That is okay at ingest time; "
-            "you can enrich labels later from official CSVs if needed."
-        )
 
 
 def print_manual_instructions(output_dir: Path) -> None:
@@ -315,8 +201,8 @@ Examples:
                 extract_archive(archive_path, extract_dir)
 
     if args.create_metadata:
-        metadata_path = output_dir.parent / "metadata" / "slides.csv"
-        create_metadata(output_dir, metadata_path)
+        metadata_path = output_dir.parent / "metadata.csv"
+        create_metadata(output_dir.parent, metadata_path)
 
     return 0
 
