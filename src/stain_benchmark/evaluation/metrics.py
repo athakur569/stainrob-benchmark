@@ -641,60 +641,8 @@ def compare_generalization_gaps(
 
 
 # =============================================================================
-# Calibration and Per-Institution Metrics (ported from pathology-eval-suite)
+# Per-Institution Metrics (ported from pathology-eval-suite)
 # =============================================================================
-
-
-@dataclass
-class CalibrationMetrics:
-    """Expected Calibration Error plus the binned reliability curve."""
-
-    ece: float
-    bin_confidence: np.ndarray  # mean predicted P(tumour) per bin
-    bin_frequency: np.ndarray  # observed fraction of tumour per bin
-    bin_count: np.ndarray
-
-    def to_dict(self) -> Dict[str, float]:
-        """Convert to dictionary (excluding arrays)."""
-        return {"ece": self.ece}
-
-
-def compute_calibration(
-    y_true: np.ndarray,
-    y_prob: np.ndarray,
-    n_bins: int = 15,
-) -> CalibrationMetrics:
-    """
-    Compute the Expected Calibration Error of positive-class probabilities.
-
-    Probabilities are grouped into ``n_bins`` equal-width bins; ECE is the
-    count-weighted mean of |observed tumour fraction − mean predicted P(tumour)|.
-    0 means perfectly calibrated. Empty bins report 0 and do not contribute.
-
-    Args:
-        y_true: Ground truth labels (0 or 1).
-        y_prob: Predicted probabilities for the positive class.
-        n_bins: Number of equal-width bins over [0, 1].
-
-    Returns:
-        CalibrationMetrics object.
-    """
-    y_true = np.asarray(y_true, dtype=float).flatten()
-    y_prob = np.asarray(y_prob, dtype=float).flatten()
-    if y_true.shape != y_prob.shape or len(y_true) == 0:
-        raise ValueError("y_true and y_prob must be non-empty and the same length")
-
-    edges = np.linspace(0.0, 1.0, n_bins + 1)
-    bins = np.digitize(y_prob, edges[1:-1])  # 0..n_bins-1; p = 1.0 lands in the last bin
-    count = np.bincount(bins, minlength=n_bins)
-    safe = np.maximum(count, 1)
-    confidence = np.bincount(bins, weights=y_prob, minlength=n_bins) / safe
-    frequency = np.bincount(bins, weights=y_true, minlength=n_bins) / safe
-
-    ece = float(np.sum(count * np.abs(frequency - confidence)) / len(y_true))
-    return CalibrationMetrics(
-        ece=ece, bin_confidence=confidence, bin_frequency=frequency, bin_count=count
-    )
 
 
 @dataclass
