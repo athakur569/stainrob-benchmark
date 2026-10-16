@@ -445,7 +445,6 @@ def macenko_normalize(
 
 if __name__ == "__main__":
     import argparse
-    from pathlib import Path
 
     import cv2
 

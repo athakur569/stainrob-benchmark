@@ -20,7 +20,6 @@ Date: February 2026
 from __future__ import annotations
 
 import json
-import tempfile
 from pathlib import Path
 
 import numpy as np
@@ -31,7 +30,6 @@ from stain_benchmark.data.splitting import (
     DataLeakageError,
     RepeatedMeasuresWarning,
     aggregate_predictions_to_patient,
-    aggregate_predictions_hierarchical,
     create_patient_splits,
     load_splits,
     load_slide_to_patient_mapping,
@@ -431,7 +429,7 @@ class TestCreatePatientSplitsTCGA:
         output_dir = tmp_path / "splits"
 
         # This should log a warning about repeated measures
-        splits = create_patient_splits(
+        create_patient_splits(
             metadata_path=sample_metadata_tcga,
             output_dir=output_dir,
             slide_id_column="slide_id",
@@ -803,6 +801,8 @@ class TestIntegration:
             slide_id_column="slide_id",
             patient_id_column="patient_id"
         )
+        df_meta = pd.read_csv(sample_metadata_tcga)
+        assert mapping == dict(zip(df_meta["slide_id"].astype(str), df_meta["patient_id"].astype(str)))
 
         # 5. Verify all slides from each patient are in same split
         df = pd.read_csv(sample_metadata_tcga)

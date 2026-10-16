@@ -729,7 +729,7 @@ def download_with_gdc_client(
     if token_path and token_path.exists():
         cmd.extend(["-t", str(token_path)])
 
-    console.print(f"\n[bold cyan]Starting download with gdc-client[/bold cyan]")
+    console.print("\n[bold cyan]Starting download with gdc-client[/bold cyan]")
     console.print(f"Command: {' '.join(cmd)}")
     console.print(f"Output directory: {output_dir}")
     console.print(f"Parallel processes: {n_processes}")

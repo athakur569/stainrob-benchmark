@@ -27,7 +27,6 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Tuple
 
 import cv2
 import numpy as np
@@ -358,7 +357,6 @@ def reinhard_normalize(
 
 if __name__ == "__main__":
     import argparse
-    from pathlib import Path
 
     parser = argparse.ArgumentParser(description="Test Reinhard normalization")
     parser.add_argument("--reference", type=str, required=True, help="Reference image")

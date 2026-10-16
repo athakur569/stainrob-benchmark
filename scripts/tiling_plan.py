@@ -13,7 +13,6 @@ import argparse
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 import yaml
 from tqdm import tqdm

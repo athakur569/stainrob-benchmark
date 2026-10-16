@@ -27,7 +27,6 @@ import sys
 import zipfile
 from pathlib import Path
 
-import pandas as pd
 from rich.console import Console
 from rich.progress import BarColumn, Progress, TextColumn
 from rich.table import Table
