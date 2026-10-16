@@ -37,6 +37,20 @@ from .base import StainNormalizer
 logger = logging.getLogger(__name__)
 
 
+def _rgb_to_lab(image: np.ndarray) -> np.ndarray:
+    """uint8 RGB -> float32 CIE Lab with L in [0, 100] and a, b in about [-127, 127].
+
+    OpenCV's uint8 path rescales Lab into 0-255 (L*255/100, a/b offset by 128); the float
+    path below keeps true CIE units, which the thresholds and clipping in this module assume."""
+    return cv2.cvtColor(image.astype(np.float32) / 255.0, cv2.COLOR_RGB2LAB)
+
+
+def _lab_to_rgb(lab: np.ndarray) -> np.ndarray:
+    """float32 CIE Lab -> uint8 RGB (OpenCV's float path returns RGB in [0, 1])."""
+    rgb = cv2.cvtColor(lab.astype(np.float32), cv2.COLOR_LAB2RGB)
+    return np.clip(np.round(rgb * 255.0), 0, 255).astype(np.uint8)
+
+
 @dataclass
 class LABStats:
     """Statistics for LAB color channels."""
@@ -172,10 +186,7 @@ class ReinhardNormalizer(StainNormalizer):
         # Compute source statistics
         src_stats = self._compute_stats(image)
 
-        # Convert to LAB
-        lab = cv2.cvtColor(image, cv2.COLOR_RGB2LAB).astype(np.float32)
-
-        # Split channels
+        lab = _rgb_to_lab(image)
         L, a, b = cv2.split(lab)
 
         # Normalize each channel
@@ -203,11 +214,7 @@ class ReinhardNormalizer(StainNormalizer):
         b = np.clip(b, -128, 127)
 
         # Merge and convert back to RGB
-        lab_normalized = cv2.merge([L, a, b]).astype(np.float32)
-        rgb_normalized = cv2.cvtColor(lab_normalized, cv2.COLOR_LAB2RGB)
-
-        # Clip and convert to uint8
-        rgb_normalized = np.clip(rgb_normalized, 0, 255).astype(np.uint8)
+        rgb_normalized = _lab_to_rgb(cv2.merge([L, a, b]))
 
         return rgb_normalized
 
@@ -222,7 +229,7 @@ class ReinhardNormalizer(StainNormalizer):
             LABStats object with mean and std for each channel.
         """
         # Convert to LAB
-        lab = cv2.cvtColor(image, cv2.COLOR_RGB2LAB).astype(np.float32)
+        lab = _rgb_to_lab(image)
 
         # Split channels
         L, a, b = cv2.split(lab)
@@ -285,7 +292,7 @@ class ReinhardRobustNormalizer(ReinhardNormalizer):
     def _compute_stats(self, image: np.ndarray) -> LABStats:
         """Compute robust statistics using median and MAD."""
         # Convert to LAB
-        lab = cv2.cvtColor(image, cv2.COLOR_RGB2LAB).astype(np.float32)
+        lab = _rgb_to_lab(image)
         L, a, b = cv2.split(lab)
 
         # Create tissue mask
