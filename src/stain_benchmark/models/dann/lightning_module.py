@@ -22,7 +22,7 @@ Date: February 2026
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional, Tuple
+from typing import Dict, Tuple
 
 import pytorch_lightning as pl
 import torch
@@ -31,7 +31,7 @@ import torch.nn.functional as F
 from torchmetrics import AUROC, Accuracy, F1Score
 from torchvision import models
 
-from .gradient_reversal import ScheduledGRL, dann_lambda_schedule
+from .gradient_reversal import ScheduledGRL
 
 logger = logging.getLogger(__name__)
 
@@ -331,7 +331,6 @@ class DANNModule(pl.LightningModule):
 
         # Split features
         source_features = features[:batch_size_source]
-        target_features = features[batch_size_source:]
 
         # Task classification (source only - we have labels)
         task_logits = self.label_classifier(source_features)
@@ -456,88 +455,3 @@ class DANNModule(pl.LightningModule):
     def get_features(self, x: torch.Tensor) -> torch.Tensor:
         """Extract features without classification (for analysis)."""
         return self.feature_extractor(x)
-
-
-# =============================================================================
-# Simplified DANN for single-domain training
-# =============================================================================
-
-
-class DANNClassifier(pl.LightningModule):
-    """
-    Simplified DANN module for standard classification.
-
-    Use this when you just want to use the DANN-trained feature extractor
-    for downstream classification without domain adaptation.
-    """
-
-    def __init__(
-        self,
-        feature_extractor: FeatureExtractor,
-        num_classes: int = 2,
-        hidden_dim: int = 256,
-        dropout: float = 0.5,
-        learning_rate: float = 1e-4,
-        freeze_backbone: bool = True,
-    ):
-        """
-        Initialize classifier using pretrained DANN features.
-
-        Args:
-            feature_extractor: Pretrained feature extractor from DANN.
-            num_classes: Number of output classes.
-            hidden_dim: Hidden dimension for classifier.
-            dropout: Dropout rate.
-            learning_rate: Learning rate.
-            freeze_backbone: Whether to freeze the feature extractor.
-        """
-        super().__init__()
-
-        self.save_hyperparameters(ignore=["feature_extractor"])
-
-        self.feature_extractor = feature_extractor
-        self.classifier = LabelClassifier(
-            input_dim=feature_extractor.feature_dim,
-            hidden_dim=hidden_dim,
-            num_classes=num_classes,
-            dropout=dropout,
-        )
-
-        if freeze_backbone:
-            for param in self.feature_extractor.parameters():
-                param.requires_grad = False
-
-        self.criterion = nn.CrossEntropyLoss()
-        self.val_acc = Accuracy(task="binary")
-        self.val_auc = AUROC(task="binary")
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        features = self.feature_extractor(x)
-        return self.classifier(features)
-
-    def training_step(self, batch, batch_idx):
-        images, labels = batch["images"], batch["labels"]
-        logits = self(images)
-        loss = self.criterion(logits, labels)
-        self.log("train/loss", loss)
-        return loss
-
-    def validation_step(self, batch, batch_idx):
-        images, labels = batch["images"], batch["labels"]
-        logits = self(images)
-        loss = self.criterion(logits, labels)
-        probs = F.softmax(logits, dim=1)[:, 1]
-        preds = logits.argmax(dim=1)
-
-        self.val_acc(preds, labels)
-        self.val_auc(probs, labels)
-
-        self.log("val/loss", loss)
-        self.log("val/acc", self.val_acc, on_epoch=True)
-        self.log("val/auc", self.val_auc, on_epoch=True)
-
-    def configure_optimizers(self):
-        return torch.optim.AdamW(
-            self.parameters(),
-            lr=self.hparams.learning_rate,
-        )

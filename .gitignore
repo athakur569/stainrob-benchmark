@@ -25,7 +25,7 @@ data/patches/
 data/*/tiles/
 data/*/patches/
 data/*/slides/
-# data/tcga/metadata.csv and data/tcga/gdc_manifest.txt ARE versioned (small, critical)
+# data/<dataset>/ holds the small record of each frozen tile set (hashes, splits, manifest): versioned
 
 # -----------------------------------------------------------------------------
 # Results and Outputs
@@ -87,7 +87,6 @@ conda-env/
 .idea/
 .vscode/settings.json
 .vscode/launch.json
-# .vscode/extensions.json is kept (recommends extensions to collaborators)
 *.swp
 *.swo
 *~
