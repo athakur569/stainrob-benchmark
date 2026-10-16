@@ -1,0 +1,66 @@
+{
+  "project_id": "CAMELYON17",
+  "split_version": "v1",
+  "derive_seed": true,
+  "seed": 1468318976,
+  "patient_universe_hash": "5832df94bc520a1b",
+  "patient_universe_path": "/media/abhi/camelyon17/derived/tiles_v1/splits/patient_universe.txt",
+  "metadata_hash": "b46f65ca9b346e45",
+  "train_ratio": 0.7,
+  "val_ratio": 0.15,
+  "test_ratio": 0.15,
+  "stratified": true,
+  "slide_id_column": "slide_id",
+  "patient_id_column": "patient_id",
+  "n_train_patients": 58,
+  "n_val_patients": 21,
+  "n_test_patients": 19,
+  "n_train_slides": 204,
+  "n_val_slides": 80,
+  "n_test_slides": 67,
+  "repeated_measures": true,
+  "max_slides_per_patient": 5,
+  "source_file": "/media/abhi/camelyon17/derived/tiles_v1/split_input.csv",
+  "checksum": "730f147b410e350c",
+  "group_column": "center",
+  "patient_label_rule": "any",
+  "weight_column": "tumour_tiles",
+  "min_test_weight": 100.0,
+  "groups": {
+    "0": {
+      "n_patients": 20,
+      "note": "weighted positives: exhaustive",
+      "train": 12,
+      "val": 4,
+      "test": 4
+    },
+    "1": {
+      "n_patients": 19,
+      "note": "weighted positives: exhaustive",
+      "train": 10,
+      "val": 6,
+      "test": 3
+    },
+    "2": {
+      "n_patients": 20,
+      "note": "weighted positives: exhaustive",
+      "train": 13,
+      "val": 3,
+      "test": 4
+    },
+    "3": {
+      "n_patients": 20,
+      "note": "weighted positives: exhaustive",
+      "train": 11,
+      "val": 5,
+      "test": 4
+    },
+    "4": {
+      "n_patients": 19,
+      "note": "weighted positives: exhaustive",
+      "train": 12,
+      "val": 3,
+      "test": 4
+    }
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "master_sha256": "1a98ed802608ec72837a1766d9bdc44a58a632cb980a7b608763db921d192381",
+  "frozen_at": "2026-10-16T15:02:54+00:00",
+  "n_tiles": 11763,
+  "parts": {
+    "tiles": "e9993703b3c05a58e7578944fb4382a09fb03ed3aa60715b47583b11c8092656",
+    "config": "7e45191cda35fea3f433a852b8b2de6eb7d12d9b12038b0c23415671032c98c4",
+    "metadata": "68988c6a102a59ee0dd16f02b9bf9fff39fdb402d7e130efe67c1cec7db71886",
+    "manifest": "ab50f9fccaa92bb5d2e66ee0ac2f929aa0a3a546769f741dfb57a230207d6bf2",
+    "split_input": "b46f65ca9b346e4501e78faf1237bc054c27f1c691cbee4c42946acc1435536f",
+    "splits/patient_universe.txt": "5832df94bc520a1be7470726cd8f30bb1ddd471a1cc12ac098fdf27a63b5501f",
+    "splits/split_metadata.json": "815cd76456747f97583a35d6dfd7a32680791ab8f7ba0ec0c9a5bfe69a9eac0f",
+    "splits/patient_splits.csv": "0a9d781719ac687f3d4171a43e4b0e41297a372482b79c1571c68b464ebd5fa0",
+    "splits/slide_to_patient_mapping.csv": "33c7fd00aa1a2927714824dfee7cb644249e8e12a5288a6b1297797b7bdb55f8",
+    "splits/train.csv": "a6b4172ab809a87d8173bdb22a1724d20e185eafb09e7d0d262b20e19ef61f83",
+    "splits/val.csv": "7a33f5e3a05446cc513605c005687cf9696e2eb17ea967f497df47c1b4dd8f28",
+    "splits/test.csv": "f9a731a82902054dba90a95a0ecff8d7dff7277d99cb99a756470dd4a96eb5f2",
+    "splits/train_patients.csv": "54c1ad20a94fab309568789bd7248022064dff202b7f330a1fc4671d3b150ddc",
+    "splits/val_patients.csv": "93a2532df304a2f3abbdd796295a01dcc4b1718bcafd20ce9035bf1dd0e2eb29",
+    "splits/test_patients.csv": "6e5939ff6bc17f6f06b2b55f0a959122e2e76dd67ded2f76f4c440b3a85b55c1"
+  },
+  "paths": {
+    "config": "configs/tiling_camelyon17.yaml",
+    "metadata": "/media/abhi/camelyon17/metadata.csv",
+    "splits_dir": "/media/abhi/camelyon17/derived/tiles_v1/splits"
+  },
+  "split": {
+    "project_id": "CAMELYON17",
+    "split_version": "v1",
+    "seed": 1468318976,
+    "patient_universe_hash": "5832df94bc520a1b",
+    "checksum": "730f147b410e350c",
+    "group_column": "center",
+    "patient_label_rule": "any"
+  },
+  "tiles_by_center_label": {
+    "0_0": 1379,
+    "0_1": 1380,
+    "1_0": 820,
+    "1_1": 820,
+    "2_0": 1180,
+    "2_1": 1194,
+    "3_0": 1120,
+    "3_1": 1120,
+    "4_0": 1374,
+    "4_1": 1376
+  },
+  "git_head": "ec0ca49e810d3afe0a9c4d64a7dc2e7ac2acac05",
+  "git_dirty": true
+}
