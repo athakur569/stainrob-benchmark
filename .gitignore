@@ -146,6 +146,7 @@ desktop.ini
 *.pem
 *.key
 secrets.yaml
+secrets.toml
 credentials.json
 
 # -----------------------------------------------------------------------------
