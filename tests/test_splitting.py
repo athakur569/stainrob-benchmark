@@ -19,6 +19,7 @@ Date: February 2026
 
 from __future__ import annotations
 
+import json
 import tempfile
 from pathlib import Path
 
@@ -867,3 +868,73 @@ class TestIntegration:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+# =============================================================================
+# Institution-grouped splitting + leave-one-group-out folds
+# =============================================================================
+@pytest.fixture
+def grouped_metadata(tmp_path: Path) -> Path:
+    """Slide table across 3 centers; per center 5 tumour patients with skewed tumour-tile
+    weights (one metastatic node each) and 15 negative patients; 5 slides per patient."""
+    rows = []
+    for center in range(3):
+        weights = [500, 500, 110, 6, 3]
+        for p in range(20):
+            pid = f"patient_{center}{p:02d}"
+            for node in range(5):
+                tumour = p < 5 and node == 0
+                rows.append({"slide_id": f"{pid}_node_{node}", "patient_id": pid, "center": center,
+                             "label": int(tumour), "tumour_tiles": weights[p] if tumour else 0})
+    path = tmp_path / "grouped.csv"
+    pd.DataFrame(rows).to_csv(path, index=False)
+    return path
+
+
+class TestGroupedSplits:
+    def _make(self, path, tmp_path, **kw):
+        return create_patient_splits(
+            metadata_path=path, output_dir=tmp_path / "s", patient_id_column="patient_id",
+            group_column="center", patient_label_rule="any", weight_column="tumour_tiles",
+            min_test_weight=100, seed=7, **kw)
+
+    def test_any_rule_labels_tumour_patients(self, grouped_metadata, tmp_path):
+        self._make(grouped_metadata, tmp_path)
+        ps = pd.read_csv(tmp_path / "s" / "patient_splits.csv")
+        assert ps.label.sum() == 15                      # 5 tumour patients x 3 centers
+        assert {"patient_id", "center", "label", "tumour_tiles", "split"} <= set(ps.columns)
+
+    def test_every_center_has_every_split_with_tumour(self, grouped_metadata, tmp_path):
+        self._make(grouped_metadata, tmp_path)
+        ps = pd.read_csv(tmp_path / "s" / "patient_splits.csv")
+        tum = ps[ps.label == 1]
+        assert (tum.groupby("center").split.nunique() == 3).all()
+        assert (tum[tum.split == "test"].groupby("center").tumour_tiles.sum() >= 100).all()
+
+    def test_no_leakage_and_metadata(self, grouped_metadata, tmp_path):
+        splits = self._make(grouped_metadata, tmp_path)
+        verify_no_leakage(splits["train_patients"], splits["val_patients"], splits["test_patients"], level="patient")
+        meta = json.loads((tmp_path / "s" / "split_metadata.json").read_text())
+        assert meta["group_column"] == "center" and meta["patient_label_rule"] == "any"
+        assert set(meta["groups"]) == {"0", "1", "2"}
+
+    def test_deterministic(self, grouped_metadata, tmp_path):
+        a = self._make(grouped_metadata, tmp_path / "a")
+        b = self._make(grouped_metadata, tmp_path / "b")
+        assert a["test_patients"] == b["test_patients"]
+
+    def test_patient_in_two_groups_rejected(self, tmp_path):
+        p = tmp_path / "bad.csv"
+        pd.DataFrame({"slide_id": ["a", "b"], "patient_id": ["x", "x"], "center": [0, 1], "label": [0, 1]}).to_csv(p, index=False)
+        with pytest.raises(ValueError, match="span"):
+            create_patient_splits(metadata_path=p, output_dir=tmp_path / "s", patient_id_column="patient_id", group_column="center")
+
+    def test_loco_fold_roles(self, grouped_metadata, tmp_path):
+        from stain_benchmark.data.splitting import loco_fold
+        self._make(grouped_metadata, tmp_path)
+        ps = pd.read_csv(tmp_path / "s" / "patient_splits.csv")
+        tiles = pd.read_csv(grouped_metadata).rename(columns={"center": "group"})
+        role = loco_fold(tiles, ps, holdout="2")
+        assert set(role[tiles.group == 2]) == {"test_cross"}
+        assert set(role[tiles.group != 2]) == {"train", "val", "test_in"}
+        assert (pd.DataFrame({"p": tiles.patient_id, "r": role}).groupby("p").r.nunique() == 1).all()

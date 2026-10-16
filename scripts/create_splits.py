@@ -86,7 +86,8 @@ def infer_project_id(df: pd.DataFrame, metadata_path: Path, user_value: str | No
     return stem if stem else "unknown_project"
 
 
-def can_stratify(df: pd.DataFrame, patient_id_column: str, label_column: str) -> tuple[bool, str]:
+def can_stratify(df: pd.DataFrame, patient_id_column: str, label_column: str,
+                 patient_label_rule: str = "mode") -> tuple[bool, str]:
     """
     Decide whether stratification is safe.
 
@@ -103,9 +104,10 @@ def can_stratify(df: pd.DataFrame, patient_id_column: str, label_column: str) ->
         m = x.mode()
         return m.iloc[0] if len(m) else x.iloc[0]
 
+    agg = mode_first if patient_label_rule == "mode" else "max"
     patient_labels = (
         df.groupby(patient_id_column, sort=True)[label_column]
-        .agg(mode_first)
+        .agg(agg)
         .reset_index()
     )
 
@@ -190,6 +192,14 @@ def main() -> int:
 
     parser.add_argument("--no-stratify", action="store_true",
                         help="Force-disable stratification")
+    parser.add_argument("--group-column", type=str, default=None,
+                        help="Institution column (e.g. center, tss): split within each group")
+    parser.add_argument("--patient-label-rule", choices=["mode", "any"], default="mode",
+                        help="Patient label from slide labels: majority (mode) or any positive")
+    parser.add_argument("--weight-column", type=str, default=None,
+                        help="Per-slide weight (e.g. tumour_tiles) used to place positive patients")
+    parser.add_argument("--min-test-weight", type=float, default=0.0,
+                        help="Minimum positive weight in each group's test split, when achievable")
     parser.add_argument("--force", action="store_true",
                         help="Overwrite existing split outputs")
     parser.add_argument("--verify-only", type=str, metavar="SPLITS_DIR",
@@ -284,6 +294,7 @@ def main() -> int:
             df=df,
             patient_id_column=patient_id_for_checks,
             label_column=args.label_column,
+            patient_label_rule=args.patient_label_rule,
         )
 
     derive_seed = not args.no_derive_seed
@@ -303,6 +314,9 @@ def main() -> int:
         "Frozen patient universe": str(patient_universe_path) if patient_universe_path else "(disabled)",
         "Train/Val/Test": f"{args.train_ratio:.0%} / {args.val_ratio:.0%} / {args.test_ratio:.0%}",
         "Stratified": f"{stratify} ({stratify_reason})",
+        "Group column": str(args.group_column),
+        "Patient label rule": args.patient_label_rule,
+        "Weight rule": f"{args.weight_column} (test >= {args.min_test_weight:g})" if args.weight_column else "none",
         "Force overwrite": str(args.force),
     })
 
@@ -325,6 +339,10 @@ def main() -> int:
             derive_seed=derive_seed,
             patient_universe_path=patient_universe_path,
             force=args.force,
+            group_column=args.group_column,
+            patient_label_rule=args.patient_label_rule,
+            weight_column=args.weight_column,
+            min_test_weight=args.min_test_weight,
         )
 
         total_slides = len(splits["train"]) + len(splits["val"]) + len(splits["test"])

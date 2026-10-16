@@ -87,6 +87,11 @@ def create_patient_splits(
     split_version: str = "v1",
     derive_seed: bool = False,
     force: bool = False,
+    # --- institution grouping (CAMELYON17 centers, TCGA sites) ---
+    group_column: Optional[str] = None,
+    patient_label_rule: Literal["mode", "any"] = "mode",
+    weight_column: Optional[str] = None,
+    min_test_weight: float = 0.0,
 ) -> dict[str, list[str]]:
     """
     Create strict patient-level splits for CAMELYON16 / TCGA / CAMELYON17 with:
@@ -98,6 +103,20 @@ def create_patient_splits(
       - TCGA: set patient_id_column='patient_id' (or your column)
       - CAMELYON16: leave patient_id_column=None
       - CAMELYON17: set patient_id_column='patient_id' (or your column)
+
+    Institution grouping (group_column, e.g. 'center' or 'tss'):
+      - every patient must belong to exactly one group;
+      - patients are split within each group, so every institution contributes to
+        train / val / test (institution-stratified); stratification by label falls
+        back to unstratified in groups where a class has < 2 patients (recorded);
+      - groups with < 3 patients go entirely to train (recorded);
+      - leave-one-group-out folds are derived later with `loco_fold`.
+    patient_label_rule: 'mode' = majority of the patient's slide labels (default,
+      as before); 'any' = positive if any slide is positive (CAMELYON17: a patient
+      with one metastatic node among five is a tumour patient).
+    weight_column / min_test_weight: optional per-slide weight (e.g. tumour tiles).
+      Within each group, positive patients are assigned so the test split carries at
+      least min_test_weight (when achievable) and weights land close to the ratios.
     """
     metadata_path = Path(metadata_path)
     output_dir = Path(output_dir)
@@ -127,6 +146,19 @@ def create_patient_splits(
     if patient_id_column is None:
         patient_id_column = slide_id_column
         logger.info("No patient_id_column specified. Assuming slide_id == patient_id (CAMELYON16 mode)")
+        # Splitting by slide is only safe if no patient-like column shows repeated slides.
+        for cand in ("patient_id", "case_id", "patient", "case", "submitter_id"):
+            if warn_repeated_measures and cand in df.columns and cand != slide_id_column:
+                per = df.groupby(cand)[slide_id_column].nunique()
+                if (per > 1).any():
+                    import warnings
+                    warnings.warn(
+                        f"Splitting by '{slide_id_column}' but column '{cand}' shows "
+                        f"{int((per > 1).sum())} patients with multiple slides. This may cause "
+                        f"data leakage! Pass patient_id_column='{cand}'.",
+                        RepeatedMeasuresWarning,
+                    )
+                    break
     else:
         if patient_id_column not in df.columns:
             raise ValueError(f"Column '{patient_id_column}' not found. Available: {list(df.columns)}")
@@ -183,17 +215,32 @@ def create_patient_splits(
     def _mode_first(x: pd.Series):
         m = x.mode()
         return m.iloc[0] if len(m) else x.iloc[0]
+    if patient_label_rule not in ("mode", "any"):
+        raise ValueError(f"patient_label_rule must be 'mode' or 'any', got {patient_label_rule!r}")
+    label_agg = _mode_first if patient_label_rule == "mode" else "max"
+    if group_column is not None:
+        if group_column not in df.columns:
+            raise ValueError(f"Column '{group_column}' not found. Available: {list(df.columns)}")
+        df[group_column] = df[group_column].astype(str)
+        multi = df.groupby(patient_id_column)[group_column].nunique()
+        if (multi > 1).any():
+            raise ValueError(f"Patients span several '{group_column}' values: {list(multi[multi > 1].index[:5])}")
+    if weight_column is not None and weight_column not in df.columns:
+        raise ValueError(f"Column '{weight_column}' not found. Available: {list(df.columns)}")
+    df["__slides__"] = df[slide_id_column]  # separate name: in 1:1 mode slide_id is also the group key
+    agg_spec = {label_column: label_agg, "__slides__": lambda s: sorted(s.astype(str).tolist())}
+    if group_column is not None:
+        agg_spec[group_column] = "first"
+    if weight_column is not None:
+        agg_spec[weight_column] = "sum"
     patient_labels = (
         df.groupby(patient_id_column, sort=True)
-          .agg({
-              label_column: _mode_first,
-              slide_id_column: lambda s: sorted(s.astype(str).tolist())
-          })
+          .agg(agg_spec)
           .reset_index()
     )
     patient_ids = patient_labels[patient_id_column].astype(str).tolist()
     labels = patient_labels[label_column].tolist()
-    patient_to_slides = dict(zip(patient_ids, patient_labels[slide_id_column]))
+    patient_to_slides = dict(zip(patient_ids, patient_labels["__slides__"]))
     # If a universe file is provided, enforce EXACT order from that file
     if patient_universe is not None:
         labels_lookup = dict(zip(
@@ -233,24 +280,45 @@ def create_patient_splits(
     # -------------------------------------------------------------------------
     # Perform stratified split at PATIENT level (same math as before)
     # -------------------------------------------------------------------------
-    val_test_ratio = val_ratio + test_ratio
-    stratify_labels = labels if stratify else None
-    train_patients, val_test_patients, _, val_test_labels = train_test_split(
-        patient_ids,
-        labels,
-        test_size=val_test_ratio,
-        random_state=seed,
-        stratify=stratify_labels,
-    )
-    test_fraction = test_ratio / val_test_ratio
-    stratify_val_test = val_test_labels if stratify else None
-    val_patients, test_patients, _, _ = train_test_split(
-        val_test_patients,
-        val_test_labels,
-        test_size=test_fraction,
-        random_state=seed,
-        stratify=stratify_val_test,
-    )
+    group_log: dict[str, Any] = {}
+    if group_column is None:
+        val_test_ratio = val_ratio + test_ratio
+        stratify_labels = labels if stratify else None
+        train_patients, val_test_patients, _, val_test_labels = train_test_split(
+            patient_ids,
+            labels,
+            test_size=val_test_ratio,
+            random_state=seed,
+            stratify=stratify_labels,
+        )
+        test_fraction = test_ratio / val_test_ratio
+        stratify_val_test = val_test_labels if stratify else None
+        val_patients, test_patients, _, _ = train_test_split(
+            val_test_patients,
+            val_test_labels,
+            test_size=test_fraction,
+            random_state=seed,
+            stratify=stratify_val_test,
+        )
+    else:
+        info = patient_labels.set_index(patient_id_column)
+        pos_label = labels.max()
+        assignment: dict[str, str] = {}
+        for g in sorted(info[group_column].unique()):
+            g_pids = [p for p in patient_ids if info.at[p, group_column] == g]
+            g_labels = np.array([labels[patient_ids.index(p)] for p in g_pids])
+            g_weights = info.loc[g_pids, weight_column] if weight_column else None
+            g_seed = _md5_seed(f"{seed}::{g}")
+            g_assign, note = _split_group(
+                g_pids, g_labels, g_weights, (train_ratio, val_ratio, test_ratio),
+                g_seed, stratify, pos_label, min_test_weight,
+            )
+            assignment.update(g_assign)
+            group_log[str(g)] = {"n_patients": len(g_pids), "note": note,
+                                 **{s: sum(1 for v in g_assign.values() if v == s) for s in ("train", "val", "test")}}
+        train_patients = [p for p in patient_ids if assignment[p] == "train"]
+        val_patients = [p for p in patient_ids if assignment[p] == "val"]
+        test_patients = [p for p in patient_ids if assignment[p] == "test"]
     # -------------------------------------------------------------------------
     # Map patients -> slides (critical for TCGA/CAMELYON17)
     # -------------------------------------------------------------------------
@@ -294,7 +362,10 @@ def create_patient_splits(
         split_df = pd.DataFrame({patient_id_column: splits[split_name]})
         split_path = output_dir / f"{split_name.replace('_patients', '')}_patients.csv"
         split_df.to_csv(split_path, index=False)
-    mapping_df = df[[slide_id_column, patient_id_column]].drop_duplicates()
+    if patient_id_column == slide_id_column:  # 1:1 mode: patient_id is the slide_id
+        mapping_df = pd.DataFrame({slide_id_column: df[slide_id_column], "patient_id": df[slide_id_column]}).drop_duplicates()
+    else:
+        mapping_df = df[[slide_id_column, patient_id_column]].drop_duplicates()
     mapping_path = output_dir / "slide_to_patient_mapping.csv"
     mapping_df.to_csv(mapping_path, index=False)
     logger.info("Saved slide-to-patient mapping to %s", mapping_path)
@@ -326,11 +397,119 @@ def create_patient_splits(
         "max_slides_per_patient": int(max_slides),
         "source_file": str(metadata_path),
         "checksum": _compute_split_checksum(splits),
+        "group_column": group_column,
+        "patient_label_rule": patient_label_rule,
+        "weight_column": weight_column,
+        "min_test_weight": min_test_weight,
+        "groups": group_log or None,
     }
+    split_of = {p: s for s in ("train", "val", "test") for p in splits[f"{s}_patients"]}
+    ps = patient_labels.rename(columns={patient_id_column: "patient_id", label_column: "label"})
+    ps = ps.drop(columns=["__slides__"])
+    ps["split"] = ps["patient_id"].map(split_of)
+    ps.to_csv(output_dir / "patient_splits.csv", index=False)
     with open(split_meta_path, "w") as f:
         json.dump(metadata, f, indent=2)
     logger.info("Saved split metadata to %s", split_meta_path)
     return splits
+# =============================================================================
+# Group-wise splitting helpers
+# =============================================================================
+_SPLITS = ("train", "val", "test")
+_EXHAUSTIVE_MAX = 12  # 3^12 = 531k assignments; above this, fall back to random
+
+
+def _assign_weighted(weights: pd.Series, ratios: tuple[float, float, float], min_test_weight: float) -> dict[str, str] | None:
+    """Exhaustive assignment of (few) positive patients to splits by weight.
+
+    Every split gets >= 1 patient; the test split gets >= min_test_weight when some
+    patient could provide it; otherwise weights land as close as possible to ratios.
+    Returns None when there are too many patients to search."""
+    import itertools
+
+    pids = sorted(weights.index)
+    n = len(pids)
+    if n < 3 or n > _EXHAUSTIVE_MAX:
+        return None
+    w = weights[pids].to_numpy(dtype=float)
+    total = w.sum()
+    floor = min(min_test_weight, float(np.sort(w)[-2]))  # achievable without emptying train
+    best, best_cost = None, np.inf
+    for combo in itertools.product(range(3), repeat=n):
+        if len(set(combo)) < 3:
+            continue
+        c = np.array(combo)
+        got = np.array([w[c == k].sum() for k in range(3)])
+        cost = float(np.abs(got / total - np.array(ratios)).sum()) if total > 0 else 0.0
+        if got[2] < floor:
+            cost += 10.0
+        if cost < best_cost - 1e-12:
+            best, best_cost = combo, cost
+    return {p: _SPLITS[k] for p, k in zip(pids, best)}
+
+
+def _random_split(pids: list[str], labels: np.ndarray | None, ratios, seed: int) -> dict[str, str]:
+    """train_test_split twice (as in the ungrouped path), stratified when labels given."""
+    val_test = ratios[1] + ratios[2]
+    tr, vt, _, vt_lab = train_test_split(pids, labels if labels is not None else pids,
+                                         test_size=val_test, random_state=seed,
+                                         stratify=labels)
+    va, te = train_test_split(vt, test_size=ratios[2] / val_test, random_state=seed,
+                              stratify=vt_lab if labels is not None else None)
+    return {**{p: "train" for p in tr}, **{p: "val" for p in va}, **{p: "test" for p in te}}
+
+
+def _split_group(pids, labels, weights, ratios, seed, stratify, pos_label, min_test_weight):
+    """Split one institution's patients. Returns (assignment, note)."""
+    if len(pids) < 3:
+        return {p: "train" for p in pids}, "fewer than 3 patients: all train"
+    counts = Counter(labels.tolist())
+    can_strat = stratify and len(counts) > 1 and min(counts.values()) >= 2 and len(pids) >= 6
+    if weights is not None:
+        pos = [p for p, l in zip(pids, labels) if l == pos_label]
+        neg = [p for p, l in zip(pids, labels) if l != pos_label]
+        pos_assign = _assign_weighted(weights[pos], ratios, min_test_weight) if pos else {}
+        if pos_assign is None:
+            pos_assign = _random_split(pos, None, ratios, seed) if len(pos) >= 3 else {p: "train" for p in pos}
+            note = "weighted positives: random (too many or too few to search)"
+        else:
+            note = "weighted positives: exhaustive"
+        neg_assign = _random_split(neg, None, ratios, seed) if len(neg) >= 3 else {p: "train" for p in neg}
+        return {**pos_assign, **neg_assign}, note
+    if can_strat:
+        return _random_split(pids, labels, ratios, seed), "stratified by label"
+    return _random_split(pids, None, ratios, seed), f"unstratified (class counts {dict(counts)})"
+
+
+def loco_fold(tiles: pd.DataFrame, patient_splits: pd.DataFrame, holdout: str,
+              group_column: str = "group", patient_id_column: str = "patient_id") -> pd.Series:
+    """Leave-one-group-out role per tile/slide row.
+
+    holdout group -> 'test_cross' (unseen institution); other groups keep their patient
+    split, with 'test' renamed 'test_in' (unseen patients, seen institutions)."""
+    split = tiles[patient_id_column].map(patient_splits.set_index("patient_id")["split"])
+    if split.isna().any():
+        raise SplitVerificationError(f"{int(split.isna().sum())} rows have no patient split")
+    role = split.replace({"test": "test_in"})
+    return role.where(tiles[group_column].astype(str) != str(holdout), "test_cross")
+
+
+def verify_split_for_patches(
+    patch_metadata: pd.DataFrame,
+    splits: dict[str, list[str]],
+    slide_id_column: str = "slide_id",
+) -> dict[str, pd.DataFrame]:
+    """Assign every patch to its slide's split and verify nothing leaks or goes missing."""
+    verify_no_leakage(splits["train"], splits["val"], splits["test"], level="slide")
+    slide_split = {s: name for name in ("train", "val", "test") for s in splits[name]}
+    sid = patch_metadata[slide_id_column].astype(str)
+    unassigned = sorted(set(sid) - set(slide_split))
+    if unassigned:
+        raise SplitVerificationError(f"{len(unassigned)} slides with patches are in no split: {unassigned[:5]}")
+    which = sid.map(slide_split)
+    return {name: patch_metadata[which == name].copy() for name in ("train", "val", "test")}
+
+
 # =============================================================================
 # Verification Functions
 # =============================================================================
@@ -432,11 +611,14 @@ def aggregate_predictions_to_patient(
         mapping_df = pd.read_csv(slide_to_patient_mapping)
     else:
         mapping_df = slide_to_patient_mapping
-    merged = predictions_df.merge(
-        mapping_df[[slide_id_column, patient_id_column]],
-        on=slide_id_column,
-        how="left"
-    )
+    if patient_id_column in predictions_df.columns:
+        merged = predictions_df.copy()  # already carries patient ids; merging would duplicate the column
+    else:
+        merged = predictions_df.merge(
+            mapping_df[[slide_id_column, patient_id_column]],
+            on=slide_id_column,
+            how="left"
+        )
     missing = int(merged[patient_id_column].isna().sum())
     if missing > 0:
         logger.warning("%d slides have no patient mapping", missing)
