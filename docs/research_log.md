@@ -167,8 +167,9 @@ Status: **RESOLVED** · **OPEN** (work pending) · **DECISION** (design choice s
   very consistent effect, and Bonferroni over 8 comparisons tightens this further. Seeds also
   capture only training variability, not the sampling of test patients.
 - **Options:** patient-clustered bootstrap intervals (ISS-031) as the main inference, with seeds
-  reported as training variability; the five leave-one-center-out folds as the unit of
-  replication; or more seeds.
+  reported as training variability; or more seeds. Using the five leave-one-center-out folds as
+  the unit of replication does not solve it for a Wilcoxon test: with 5 pairs the smallest
+  two-sided p-value is 2/2⁵ = 0.0625.
 - **Evidence:** `tests/test_statistical_tests.py::test_wilcoxon_cannot_reach_005_with_three_pairs`.
 
 ### ISS-037 · methods · E5 classifier head differs from E1
