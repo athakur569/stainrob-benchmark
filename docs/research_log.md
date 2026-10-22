@@ -32,6 +32,7 @@ Status: **RESOLVED** · **OPEN** (work pending) · **DECISION** (design choice s
 | ISS-031 | 2026-10 | statistics | Bootstrap resamples tiles, not patients | OPEN |
 | ISS-036 | 2026-10 | statistics | Three seeds cannot support the planned paired tests | DECISION |
 | ISS-037 | 2026-10 | methods | E5 (DANN) classifier head differs from E1 | DECISION |
+| ISS-039 | 2026-10 | statistics | Neighbouring tiles are correlated; tests must resample patients or slides | OPEN |
 
 ---
 
@@ -177,3 +178,14 @@ Status: **RESOLVED** · **OPEN** (work pending) · **DECISION** (design choice s
   2048 → 256 → 2 head. The design requires identical downstream models with only stain handling
   varying, so an E5-vs-E1 difference would mix the effect of DANN with the effect of the head.
 - **Plan:** give both the same head when E5 is built (with ISS-030).
+
+### ISS-039 · statistics · Neighbouring tiles are correlated
+- **Checked:** frozen tiles do not overlap — the grid stride equals the tile size, and the largest
+  overlap between any two tiles is 0.10% of a tile (rounding). The 500-tile tumour cap is a
+  ceiling, not a quota: 26 of 32 tumour slides contributed every tile they had.
+- **Problem:** tumour tiles are mostly edge-to-edge neighbours from a few lesions, and neighbouring
+  tiles are correlated. Permutation tests and bootstraps that treat tiles as independent would give
+  too many false alarms and intervals that are too narrow.
+- **Plan:** resample and permute at the patient or slide level (with ISS-031), in both the
+  evaluation and the monitor's threshold calibration.
+
