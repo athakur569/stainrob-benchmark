@@ -336,6 +336,38 @@ def compute_institution_metrics(
     )
 
 
+def compute_calibration_slope(
+    y_true: np.ndarray,
+    y_prob: np.ndarray,
+    eps: float = 1e-6,
+) -> Tuple[float, float]:
+    """
+    Calibration slope and intercept: logistic regression of the outcome on logit(p).
+
+    A slope of 1 means predicted probabilities spread as much as they should; below 1 the
+    model is overconfident (probabilities too extreme), above 1 underconfident. Unlike
+    absolute calibration (ECE), the slope does not depend on the sampled tumour fraction,
+    which is fixed 1:1 by design in our tile sets (DR-006).
+
+    Args:
+        y_true: Ground truth labels (0 or 1).
+        y_prob: Predicted probabilities for the positive class.
+        eps: Probabilities are clipped to [eps, 1 - eps] before the logit.
+
+    Returns:
+        (slope, intercept).
+    """
+    from sklearn.linear_model import LogisticRegression
+
+    y_true = np.asarray(y_true).flatten().astype(int)
+    p = np.clip(np.asarray(y_prob, dtype=float).flatten(), eps, 1 - eps)
+    if len(np.unique(y_true)) < 2:
+        raise ValueError("calibration slope needs both classes present")
+    lp = np.log(p / (1 - p)).reshape(-1, 1)
+    fit = LogisticRegression(penalty=None, solver="lbfgs", max_iter=1000).fit(lp, y_true)
+    return float(fit.coef_[0, 0]), float(fit.intercept_[0])
+
+
 # =============================================================================
 # Aggregation Functions
 # =============================================================================

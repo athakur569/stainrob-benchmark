@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from sklearn.metrics import roc_auc_score
 
-from stain_benchmark.evaluation.metrics import compute_institution_metrics
+from stain_benchmark.evaluation.metrics import compute_calibration_slope, compute_institution_metrics
 
 
 class TestInstitutionMetrics:
@@ -44,3 +44,33 @@ class TestInstitutionMetrics:
         y, p, inst = self._data()
         m = inst == "A"
         assert np.isnan(compute_institution_metrics(y[m], p[m], inst[m]).fairness_gap)
+
+
+class TestCalibrationSlope:
+    def _simulate(self, true_slope, n=20000, seed=0):
+        # Outcome drawn from sigmoid(true_slope * logit(p)): the model's probabilities p are
+        # well calibrated only when true_slope == 1.
+        rng = np.random.default_rng(seed)
+        lp = rng.normal(0, 2, n)
+        y = rng.random(n) < 1 / (1 + np.exp(-true_slope * lp))
+        return y.astype(int), 1 / (1 + np.exp(-lp))
+
+    @pytest.mark.parametrize("true_slope", [0.5, 1.0, 1.5])
+    def test_recovers_known_slope(self, true_slope):
+        y, p = self._simulate(true_slope)
+        slope, intercept = compute_calibration_slope(y, p)
+        assert slope == pytest.approx(true_slope, abs=0.06)
+        assert intercept == pytest.approx(0.0, abs=0.06)
+
+    def test_unaffected_by_resampling_prevalence(self):
+        # Keeping all positives but only a third of negatives changes prevalence (and so ECE)
+        # but leaves the slope unchanged; only the intercept moves.
+        y, p = self._simulate(1.0, n=60000)
+        keep = (y == 1) | (np.arange(len(y)) % 3 == 0)
+        slope, intercept = compute_calibration_slope(y[keep], p[keep])
+        assert slope == pytest.approx(1.0, abs=0.06)
+        assert intercept == pytest.approx(np.log(3), abs=0.1)
+
+    def test_single_class_raises(self):
+        with pytest.raises(ValueError, match="both classes"):
+            compute_calibration_slope(np.ones(10), np.full(10, 0.7))

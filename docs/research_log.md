@@ -25,7 +25,7 @@ Status: **RESOLVED** · **OPEN** (work pending) · **DECISION** (design choice s
 | ISS-022 | 2026-10 | splits | Bugs in the original splitting code | RESOLVED |
 | ISS-023 | 2026-10 | normalisation | Reinhard (E3) produced near-black images | RESOLVED |
 | ISS-024 | 2026-10 | environment | pandas 2.x silently turned labels into text | RESOLVED |
-| ISS-026 | 2026-10 | reproducibility | GPU determinism needs `CUBLAS_WORKSPACE_CONFIG` | OPEN |
+| ISS-026 | 2026-10 | reproducibility | GPU determinism needs `CUBLAS_WORKSPACE_CONFIG` | RESOLVED |
 | ISS-028 | 2026-10 | data | CAMELYON17 labels were guessed from file paths | RESOLVED |
 | ISS-029 | 2026-10 | splits | TCGA bootstrap script rebuilds splits on every run | OPEN |
 | ISS-030 | 2026-10 | methods | DANN as written is domain adaptation, not generalisation | RESOLVED |
@@ -139,7 +139,9 @@ Status: **RESOLVED** · **OPEN** (work pending) · **DECISION** (design choice s
 ### ISS-026 · reproducibility · GPU determinism needs `CUBLAS_WORKSPACE_CONFIG`
 - **Problem:** `set_seed(deterministic=True)` enables deterministic algorithms, but only
   `make_deterministic` sets the cuBLAS workspace variable; GPU matrix multiplies fail without it.
-- **Plan:** the training entry point calls both.
+- **Resolution:** the training run sets both; ResNet's adaptive average pool, which has no deterministic GPU
+  backward pass, is replaced by an identical spatial mean. Two runs with the same seed on the real tiles
+  give bit-identical outputs. Test sets are scored only after the analysis plan is committed to git.
 
 ### ISS-028 · data · CAMELYON17 labels were guessed from file paths
 - **Problem:** the original metadata step inferred labels and centers from file paths, giving
