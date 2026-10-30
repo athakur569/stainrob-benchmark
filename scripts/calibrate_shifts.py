@@ -3,7 +3,7 @@
 
 For every family and every target colour difference (mean CIELAB ΔE), find the strength that
 reaches it on a fixed calibration sample: tiles from patients in the TRAINING split, 10 per
-(centre, label), seed 0. SSIM at each dose is recorded as a secondary description (DR-014).
+(centre, label), seed 0. SSIM at each dose is recorded as a secondary description (DR-015).
 
     python scripts/calibrate_shifts.py --tiles /media/abhi/camelyon17/derived/tiles_v1 \\
         --out configs/shift_doses_camelyon17.json
@@ -68,7 +68,7 @@ def main() -> None:
         "dataset": freeze.get("split", {}).get("project_id"),
         "freeze_master_sha256": freeze["master_sha256"],
         "created": date.today().isoformat(),
-        "matching_measure": "mean per-pixel CIELAB ΔE76 between tile and shifted tile (DR-014)",
+        "matching_measure": "mean per-pixel CIELAB ΔE76 between tile and shifted tile (DR-015)",
         "calibration_sample": {"rule": f"training-split patients; {PER_CELL} tiles per (centre, label); seed {SEED}",
                                "n_tiles": len(sample), "tile_ids": keys},
         "shift_seed": SEED,

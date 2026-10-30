@@ -2,7 +2,7 @@
   "dataset": "CAMELYON17",
   "freeze_master_sha256": "1a98ed802608ec72837a1766d9bdc44a58a632cb980a7b608763db921d192381",
   "created": "2026-10-30",
-  "matching_measure": "mean per-pixel CIELAB \u0394E76 between tile and shifted tile (DR-014)",
+  "matching_measure": "mean per-pixel CIELAB \u0394E76 between tile and shifted tile (DR-015)",
   "calibration_sample": {
     "rule": "training-split patients; 10 tiles per (centre, label); seed 0",
     "n_tiles": 100,

@@ -15,7 +15,7 @@ the expected-harmless control:
 
 Doses are matched ACROSS families by how much the image changes, not by any monitor statistic
 (matching on a Tier 1 statistic would make the harmful-versus-harmless test circular). The
-primary yardstick is the mean per-pixel CIELAB colour difference ΔE (DR-014): every family can
+primary yardstick is the mean per-pixel CIELAB colour difference ΔE (DR-015): every family can
 reach the same ΔE levels. SSIM was the first choice but cannot be used for matching: stain
 changes barely move it (mean SSIM ≥ 0.94 even at maximum stain strength on real tiles, while
 blur reaches 0.22), so it is reported alongside as a secondary description.
