@@ -4,7 +4,7 @@ Extract Tier 1a and Tier 1b features for a set of tiles, optionally under a synt
 Output directory:
     tiles.csv     tile_id, patient_id, slide_id, center, label (row order of the features)
     tier1a.csv    tile_id + the 23 Tier 1a statistics
-    tier1b.npy    float16 (n_tiles, 2048) frozen ImageNet ResNet-50 features
+    tier1b.npy    float16 (n_tiles, d) frozen ImageNet encoder features (d = 2048 ResNet-50, 1024 DenseNet-121)
     info.json     tile subset rule, shift family / strength / seed, encoder, freeze hash
 """
 
@@ -43,14 +43,14 @@ class _Tiles(Dataset):
 def extract_tier1(tiles_dir: str | Path, table: pd.DataFrame, out_dir: str | Path, subset_rule: str,
                   shift: str | None = None, strength: float = 0.0, seed: int = 0, num_workers: int = 8,
                   batch_size: int = 64, device: str | None = None, pretrained: bool = True,
-                  progress: bool = True) -> dict:
+                  progress: bool = True, arch: str = "resnet50") -> dict:
     """Compute Tier 1a/1b for every row of ``table``; refuses to overwrite an existing extraction."""
     tiles_dir, out_dir = Path(tiles_dir), Path(out_dir)
     if (out_dir / "info.json").exists():
         raise FileExistsError(f"{out_dir} already holds an extraction")
     out_dir.mkdir(parents=True, exist_ok=True)
     dev = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
-    enc = Tier1bEncoder(pretrained=pretrained).to(dev)
+    enc = Tier1bEncoder(pretrained=pretrained, arch=arch).to(dev)
     loader = DataLoader(_Tiles(tiles_dir, table, shift, strength, seed), batch_size=batch_size,
                         shuffle=False, num_workers=num_workers)
     f1a, f1b = [], []
@@ -64,8 +64,9 @@ def extract_tier1(tiles_dir: str | Path, table: pd.DataFrame, out_dir: str | Pat
     np.save(out_dir / "tier1b.npy", np.concatenate(f1b))
     freeze_path = tiles_dir / "freeze.json"
     info = {"n_tiles": len(keep), "subset_rule": subset_rule, "shift": shift, "strength": strength,
-            "shift_seed": seed, "tier1b_encoder": "torchvision resnet50 IMAGENET1K_V2, frozen" if pretrained
-            else "resnet50, random weights (test only)",
+            "shift_seed": seed,
+            "tier1b_encoder": f"torchvision {arch} ImageNet weights, frozen" if pretrained
+            else f"{arch}, random weights (test only)",
             "freeze_master_sha256": json.loads(freeze_path.read_text())["master_sha256"]
             if freeze_path.exists() else None}
     (out_dir / "info.json").write_text(json.dumps(info, indent=2))

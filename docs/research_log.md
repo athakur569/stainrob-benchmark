@@ -36,6 +36,7 @@ Status: **RESOLVED** · **OPEN** (work pending) · **DECISION** (design choice s
 | ISS-040 | 2026-10 | reproducibility | Worker seeding replayed the same augmentations every epoch | RESOLVED |
 | ISS-041 | 2026-10 | normalisation | Macenko (E2) turned real tiles nearly black | RESOLVED |
 | ISS-042 | 2026-10 | methods | SSIM cannot match stain shifts to the other shift families | RESOLVED |
+| ISS-043 | 2026-10 | methods | The generic-encoder monitor tier starts from the same weights as the classifier | DECISION |
 
 ---
 
@@ -224,4 +225,13 @@ Status: **RESOLVED** · **OPEN** (work pending) · **DECISION** (design choice s
   every family reaches; SSIM is reported for every dose. The dose table was fixed on training-split tiles
   only and is committed (`configs/shift_doses_camelyon17.json`). Limitation stated: at equal ΔE, blur
   changes structure far more than stain does, so any equal-size yardstick embeds a judgement.
+
+### ISS-043 · methods · The generic-encoder monitor tier starts from the same weights as the classifier
+- **Problem:** Tier 1b uses a frozen ImageNet ResNet-50; the classifier being monitored is a ResNet-50 fine-tuned
+  from the same ImageNet weights. The two are identical at initialisation, so Tier 1b is not fully independent of
+  what it monitors.
+- **Options:** keep ResNet-50 and state the coupling; switch Tier 1b to a different open architecture
+  (DenseNet-121 is implemented and checked on real tiles); or report both, DenseNet-121 primary and ResNet-50 as a
+  sensitivity analysis.
+- **Decision needed** before the analysis plan is fixed.
 

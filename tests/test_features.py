@@ -82,3 +82,15 @@ def test_extract_writes_aligned_outputs(frozen, tmp_path):
     assert (g1a.log_laplacian_var < f1a.log_laplacian_var).all()
     with pytest.raises(FileExistsError):
         extract_tier1(frozen, table, tmp_path / "x", "test", num_workers=0, device="cpu", pretrained=False)
+
+
+@pytest.mark.parametrize("arch,dim", [("resnet50", 2048), ("densenet121", 1024)])
+def test_tier1b_encoders(arch, dim):
+    enc = Tier1bEncoder(pretrained=False, arch=arch)
+    x = torch.from_numpy(np.stack([TILE, TILE]))
+    assert enc(x).shape == (2, dim) and enc.dim == dim
+
+
+def test_unknown_encoder_raises():
+    with pytest.raises(ValueError, match="unknown Tier 1b encoder"):
+        Tier1bEncoder(pretrained=False, arch="vgg")

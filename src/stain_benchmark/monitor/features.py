@@ -6,8 +6,12 @@ Tier 1a: fixed pixel statistics, no model at all (23 numbers per tile):
                 (colour deconvolution, Ruifrok & Johnston)                       18
     texture     grey-level mean and SD, log(1 + variance of the Laplacian) (sharpness),
                 grey-level entropy (bits), tissue fraction (HSV saturation > 0.07)  5
-Tier 1b: the 2,048 pooled features of a frozen ImageNet ResNet-50 (torchvision IMAGENET1K_V2),
-    never fine-tuned (DR-005: an open, generic encoder; not the deployed model).
+Tier 1b: the pooled features of a frozen, open ImageNet encoder, never fine-tuned (DR-005):
+    ``resnet50``     torchvision IMAGENET1K_V2, 2,048 features (current default)
+    ``densenet121``  torchvision IMAGENET1K_V1, 1,024 features
+    Open question (ISS-043): the deployed classifier is also a ResNet-50 started from IMAGENET1K_V2,
+    so the default 1b encoder equals the classifier at initialisation; DenseNet-121 removes that
+    shared starting point. The choice is Abhi's.
 
 Both are computed on the tiles as they arrive (before any stain normalisation), so they do not
 depend on which condition E1–E5 is being monitored.
@@ -58,14 +62,23 @@ IMAGENET_MEAN = torch.tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1)
 IMAGENET_STD = torch.tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1)
 
 
-class Tier1bEncoder(nn.Module):
-    """Frozen ImageNet ResNet-50 returning the 2,048 pooled features per tile."""
+TIER1B_ARCHS = {"resnet50": 2048, "densenet121": 1024}
 
-    def __init__(self, pretrained: bool = True):
+
+class Tier1bEncoder(nn.Module):
+    """Frozen ImageNet encoder returning pooled features per tile (see ``TIER1B_ARCHS``)."""
+
+    def __init__(self, pretrained: bool = True, arch: str = "resnet50"):
         super().__init__()
-        weights = models.ResNet50_Weights.IMAGENET1K_V2 if pretrained else None
-        net = models.resnet50(weights=weights)
-        net.fc = nn.Identity()
+        if arch == "resnet50":
+            net = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V2 if pretrained else None)
+            net.fc = nn.Identity()
+        elif arch == "densenet121":
+            net = models.densenet121(weights=models.DenseNet121_Weights.IMAGENET1K_V1 if pretrained else None)
+            net.classifier = nn.Identity()
+        else:
+            raise ValueError(f"unknown Tier 1b encoder {arch!r}; choose from {sorted(TIER1B_ARCHS)}")
+        self.arch, self.dim = arch, TIER1B_ARCHS[arch]
         self.net = net.eval()
         for p in self.net.parameters():
             p.requires_grad_(False)

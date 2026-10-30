@@ -28,6 +28,8 @@ def main() -> None:
     ap.add_argument("--dose", type=int, default=None, help="dose index (0-4) in the dose table")
     ap.add_argument("--doses", default="configs/shift_doses_camelyon17.json")
     ap.add_argument("--workers", type=int, default=8)
+    ap.add_argument("--encoder", choices=["resnet50", "densenet121"], default="resnet50",
+                    help="Tier 1b encoder (ISS-043: choice pending)")
     args = ap.parse_args()
 
     tiles_dir = Path(args.tiles)
@@ -49,7 +51,7 @@ def main() -> None:
         strength = table_doses["doses"][args.shift][args.dose]["strength"]
         seed = table_doses["shift_seed"]
     info = extract_tier1(tiles_dir, table, args.out, rule, shift=args.shift, strength=strength,
-                         seed=seed, num_workers=args.workers)
+                         seed=seed, num_workers=args.workers, arch=args.encoder)
     print(json.dumps(info, indent=2))
 
 
