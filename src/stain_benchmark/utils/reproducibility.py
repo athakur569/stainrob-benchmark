@@ -273,32 +273,32 @@ class WorkerInitFn:
     """
     Worker initialization function for DataLoader reproducibility.
 
-    Each DataLoader worker needs a unique but reproducible seed.
-    This class provides a callable that sets worker seeds based on
-    the base seed and worker ID.
+    PyTorch already gives every worker its own torch seed, drawn from the DataLoader's
+    ``generator`` each epoch (so pass ``generator=get_generator(seed)`` for reproducibility).
+    This callable seeds Python's and NumPy's RNGs from that torch seed, so all three differ
+    per worker and per epoch yet repeat exactly for the same base seed. It does not reset the
+    torch seed: a fixed per-worker torch seed would replay the same augmentations every epoch.
 
     Example:
         >>> from torch.utils.data import DataLoader
-        >>> worker_init = WorkerInitFn(seed=42)
         >>> loader = DataLoader(
         ...     dataset,
         ...     num_workers=4,
-        ...     worker_init_fn=worker_init,
+        ...     worker_init_fn=WorkerInitFn(seed=42),
+        ...     generator=get_generator(42),
         ... )
     """
 
     def __init__(self, seed: int = 42):
-        self.seed = seed
+        self.seed = seed  # kept for the call signature; the base seed comes from the generator
 
     def __call__(self, worker_id: int) -> None:
-        """Initialize worker with unique seed."""
-        worker_seed = self.seed + worker_id
+        """Seed Python and NumPy from this worker's torch seed."""
+        worker_seed = torch.initial_seed() % 2**32
 
         random.seed(worker_seed)
         np.random.seed(worker_seed)
-        torch.manual_seed(worker_seed)
 
-        # For debugging
         logger.debug("Worker %d initialized with seed %d", worker_id, worker_seed)
 
 

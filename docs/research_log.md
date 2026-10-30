@@ -33,6 +33,7 @@ Status: **RESOLVED** · **OPEN** (work pending) · **DECISION** (design choice s
 | ISS-036 | 2026-10 | statistics | Three seeds cannot support the planned paired tests | RESOLVED |
 | ISS-037 | 2026-10 | methods | E5 (DANN) classifier head differs from E1 | RESOLVED |
 | ISS-039 | 2026-10 | statistics | Neighbouring tiles are correlated; tests must resample patients or slides | OPEN |
+| ISS-040 | 2026-10 | reproducibility | Worker seeding replayed the same augmentations every epoch | RESOLVED |
 
 ---
 
@@ -194,4 +195,11 @@ Status: **RESOLVED** · **OPEN** (work pending) · **DECISION** (design choice s
   too many false alarms and intervals that are too narrow.
 - **Plan:** resample and permute at the patient or slide level (with ISS-031), in both the
   evaluation and the monitor's threshold calibration.
+
+### ISS-040 · reproducibility · Worker seeding replayed augmentations every epoch
+- **Problem:** the data-loader worker seeding reset each worker's random generator to the same value at
+  every epoch, so random flips and rotations repeated epoch after epoch.
+- **Resolution:** workers are now seeded from the loader's own seeded generator — different per worker
+  and per epoch, identical for the same base seed. Augmentation itself is geometric only (flips and 90°
+  rotations); colour augmentation is excluded because it is a stain-handling method in its own right.
 
