@@ -164,6 +164,7 @@ class DomainClassifier(nn.Module):
         input_dim: int = 2048,
         hidden_dim: int = 1024,
         dropout: float = 0.5,
+        num_domains: int = 2,
     ):
         super().__init__()
 
@@ -176,7 +177,7 @@ class DomainClassifier(nn.Module):
             nn.BatchNorm1d(hidden_dim),
             nn.ReLU(inplace=True),
             nn.Dropout(dropout),
-            nn.Linear(hidden_dim, 2),  # Binary: source (0) vs target (1)
+            nn.Linear(hidden_dim, num_domains),  # one output per domain (e.g. training centre)
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

@@ -124,3 +124,26 @@ def test_normalised_condition_changes_inputs(frozen, tmp_path):
     norm, ref = fit_reference("E3", frozen, table)
     assert norm is not None and len(ref) == (table.role == "train").sum()     # fewer than 200 available
     assert fit_reference("E1", frozen, table)[0] is None
+
+
+def test_e5_dann_uses_training_centres_only(frozen, tmp_path):
+    s = train_run(frozen, holdout=1, seed=3, run_dir=tmp_path / "e5", condition="E5",
+                  schedule=Schedule(epochs=2, batch_size=4), num_workers=0, device="cpu",
+                  pretrained=False, progress=False, require_plan=False)
+    run = tmp_path / "e5"
+    log = pd.read_csv(run / "train_log.csv")
+    assert {"domain_accuracy", "lambda"} <= set(log.columns)
+    assert 0 <= log.domain_accuracy.min() and log.domain_accuracy.max() <= 1
+    assert log["lambda"].iloc[0] < log["lambda"].iloc[-1] < 1          # reversal strength ramps up
+    head = torch.load(run / "domain_head.pt")
+    assert head["classifier.8.weight"].shape[0] == 2                   # centres 0 and 2 only
+    assert len(pd.read_csv(run / "predictions_test_cross.csv")) == 8
+    assert s["condition"] == "E5"
+
+
+def test_loaders_give_domain_only_for_training_tiles(frozen):
+    from stain_benchmark.data.dataset import make_loaders
+    loaders, _ = make_loaders(frozen, holdout=1, seed=1, batch_size=8, num_workers=0)
+    batch = next(iter(loaders["train"]))
+    assert set(batch["domain"].tolist()) <= {0, 1}
+    assert "domain" not in next(iter(loaders["test_cross"]))

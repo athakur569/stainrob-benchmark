@@ -41,6 +41,8 @@ from stain_benchmark.data.dataset import ROLES, TileDataset, fold_table, make_lo
 from stain_benchmark.data.freeze import verify_freeze
 from stain_benchmark.evaluation.metrics import compute_calibration_slope
 from stain_benchmark.models.classifier.lightning_module import ResNet50Classifier
+from stain_benchmark.models.dann.gradient_reversal import ScheduledGRL
+from stain_benchmark.models.dann.lightning_module import DomainClassifier
 from stain_benchmark.normalization.base import StainNormalizer
 from stain_benchmark.normalization.macenko import MacenkoNormalizer
 from stain_benchmark.normalization.reinhard import ReinhardNormalizer
@@ -51,7 +53,8 @@ from stain_benchmark.utils.reproducibility import (
     set_seed,
 )
 
-CONDITIONS = ("E1", "E2", "E3")  # E5 is added when its piece is built
+CONDITIONS = ("E1", "E2", "E3", "E5")
+DANN_GAMMA, DANN_MAX_LAMBDA, DANN_DOMAIN_WEIGHT = 10.0, 1.0, 1.0   # Ganin et al. 2016 (DR-017)
 NORMALIZERS = {"E2": MacenkoNormalizer, "E3": ReinhardNormalizer}
 N_REFERENCE = 200       # tiles the stain reference is fitted on (DR-013)
 REFERENCE_SEED = 0      # fixed, so every training seed of a fold shares one reference
@@ -186,21 +189,45 @@ def train_run(tiles_dir: str | Path, holdout: str | int, seed: int, run_dir: str
     loaders, table = make_loaders(tiles_dir, holdout, seed, batch_size=schedule.batch_size,
                                   num_workers=num_workers, normalizer=norm_fn, verify=False)
     model = build_model(pretrained).to(dev)
-    opt = torch.optim.SGD(model.parameters(), lr=schedule.lr, momentum=schedule.momentum,
+    params = list(model.parameters())
+    dann = condition == "E5"
+    if dann:
+        # E5: domain-adversarial training over the TRAINING centres only (DR-008); the held-out
+        # centre is never seen. Same tumour head as E1; the domain branch only shapes the features.
+        n_domains = int(table.loc[table["role"] == "train", "center"].nunique())
+        domain_head = DomainClassifier(input_dim=2048, hidden_dim=1024, dropout=0.5,
+                                       num_domains=n_domains).to(dev)
+        grl = ScheduledGRL(gamma=DANN_GAMMA, max_lambda=DANN_MAX_LAMBDA)
+        params += list(domain_head.parameters())
+        total_steps = schedule.epochs * len(loaders["train"])
+    opt = torch.optim.SGD(params, lr=schedule.lr, momentum=schedule.momentum,
                           weight_decay=schedule.weight_decay)
     loss_fn = nn.CrossEntropyLoss()
+    step = 0
 
     log, t_start = [], time.time()
     for epoch in range(1, schedule.epochs + 1):
         model.train()
-        t0, total, correct, loss_sum = time.time(), 0, 0, 0.0
+        if dann:
+            domain_head.train()
+        t0, total, correct, loss_sum, dom_correct = time.time(), 0, 0, 0.0, 0
         bar = tqdm(loaders["train"], desc=f"{condition} fold {holdout} seed {seed} · epoch {epoch}/{schedule.epochs}",
                    unit="batch", disable=not progress)
         for batch in bar:
             x = batch["images"].to(dev, non_blocking=True)
             y = batch["labels"].to(dev, non_blocking=True)
-            out = model(x)
-            loss = loss_fn(out, y)
+            if dann:
+                lam = grl.update_lambda(step / total_steps)
+                f = model.get_features(x)
+                out = model.backbone.fc(f)
+                dom_out = domain_head(grl(f))
+                d = batch["domain"].to(dev, non_blocking=True)
+                loss = loss_fn(out, y) + DANN_DOMAIN_WEIGHT * loss_fn(dom_out, d)
+                dom_correct += (dom_out.argmax(1) == d).sum().item()
+            else:
+                out = model(x)
+                loss = loss_fn(out, y)
+            step += 1
             opt.zero_grad(set_to_none=True)
             loss.backward()
             opt.step()
@@ -208,11 +235,14 @@ def train_run(tiles_dir: str | Path, holdout: str | int, seed: int, run_dir: str
             correct += (out.argmax(1) == y).sum().item()
             bar.set_postfix(loss=f"{loss_sum / total:.4f}", acc=f"{correct / total:.3f}")
         log.append({"epoch": epoch, "loss": loss_sum / total, "accuracy": correct / total,
-                    "seconds": round(time.time() - t0, 1)})
+                    "seconds": round(time.time() - t0, 1),
+                    **({"domain_accuracy": dom_correct / total, "lambda": round(lam, 4)} if dann else {})})
         print(f"epoch {epoch}: loss {loss_sum / total:.4f} · train accuracy {correct / total:.3f} "
               f"· {time.time() - t0:.0f}s", flush=True)
     pd.DataFrame(log).to_csv(run_dir / "train_log.csv", index=False)
     torch.save(model.state_dict(), run_dir / "model.pt")
+    if dann:
+        torch.save(domain_head.state_dict(), run_dir / "domain_head.pt")
 
     metrics = {}
     for role in roles:

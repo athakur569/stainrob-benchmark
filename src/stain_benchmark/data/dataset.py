@@ -57,19 +57,21 @@ def geometric_augment(x: torch.Tensor) -> torch.Tensor:
 class TileDataset(Dataset):
     """Tiles listed in ``table`` (rows of the frozen manifest), as ImageNet-normalised tensors.
 
-    Each item is a dict: ``images`` (3, H, W) float, ``labels`` (0 normal / 1 tumour) and
-    ``index`` (the row's position in ``table``, so per-tile outputs can be joined back).
+    Each item is a dict: ``images`` (3, H, W) float, ``labels`` (0 normal / 1 tumour),
+    ``index`` (the row's position in ``table``, so per-tile outputs can be joined back) and,
+    if ``domains`` is given, ``domain`` (the tile's training-centre index, used by E5).
     ``normalizer`` maps a uint8 RGB array to a uint8 RGB array (E2/E3 stain normalisation).
     """
 
     def __init__(self, out_dir: str | Path, table: pd.DataFrame,
                  normalizer: Callable[[np.ndarray], np.ndarray] | None = None,
-                 augment: bool = False):
+                 augment: bool = False, domains: np.ndarray | None = None):
         self.out_dir = Path(out_dir)
         self.paths = table["path"].tolist()
         self.labels = table["label"].astype(int).to_numpy()
         self.normalizer = normalizer
         self.augment = augment
+        self.domains = None if domains is None else np.asarray(domains, dtype=np.int64)
 
     def __len__(self) -> int:
         return len(self.paths)
@@ -82,7 +84,10 @@ class TileDataset(Dataset):
         if self.augment:
             x = geometric_augment(x)
         x = (x - IMAGENET_MEAN) / IMAGENET_STD
-        return {"images": x, "labels": int(self.labels[i]), "index": i}
+        item = {"images": x, "labels": int(self.labels[i]), "index": i}
+        if self.domains is not None:
+            item["domain"] = int(self.domains[i])
+        return item
 
 
 def make_loaders(out_dir: str | Path, holdout: str | int, seed: int, batch_size: int = 64,
@@ -101,8 +106,12 @@ def make_loaders(out_dir: str | Path, holdout: str | int, seed: int, batch_size:
     for role in ROLES:
         sub = table[table["role"] == role].reset_index(drop=True)
         train = role == "train"
+        domains = None
+        if train:  # training-centre index 0..K-1, for the domain-adversarial condition (E5)
+            centres = sorted(sub["center"].astype(str).unique())
+            domains = sub["center"].astype(str).map({c: k for k, c in enumerate(centres)}).to_numpy()
         loaders[role] = DataLoader(
-            TileDataset(out_dir, sub, normalizer=normalizer, augment=train),
+            TileDataset(out_dir, sub, normalizer=normalizer, augment=train, domains=domains),
             batch_size=batch_size, shuffle=train, drop_last=False,
             num_workers=num_workers, pin_memory=torch.cuda.is_available(),
             worker_init_fn=WorkerInitFn(seed), generator=get_generator(seed),
