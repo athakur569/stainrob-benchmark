@@ -35,6 +35,7 @@ Status: **RESOLVED** · **OPEN** (work pending) · **DECISION** (design choice s
 | ISS-039 | 2026-10 | statistics | Neighbouring tiles are correlated; tests must resample patients or slides | OPEN |
 | ISS-040 | 2026-10 | reproducibility | Worker seeding replayed the same augmentations every epoch | RESOLVED |
 | ISS-041 | 2026-10 | normalisation | Macenko (E2) turned real tiles nearly black | RESOLVED |
+| ISS-042 | 2026-10 | methods | SSIM cannot match stain shifts to the other shift families | RESOLVED |
 
 ---
 
@@ -214,4 +215,13 @@ Status: **RESOLVED** · **OPEN** (work pending) · **DECISION** (design choice s
   differently were rescaled against the wrong dye.
 - **Resolution:** signs oriented, rows ordered by red absorbance (haematoxylin first), rescaling guarded.
   On real tiles: no dark outputs, H&E appearance preserved. Regression tests added. No E2 results existed.
+
+### ISS-042 · methods · SSIM cannot match stain shifts to the other shift families
+- **Found:** before fixing the synthetic-shift doses, the reachable range of each family was measured on
+  training-split tiles. Stain changes barely move SSIM (≥ 0.94 even at maximum strength), while blur reaches
+  0.22. Matching on SSIM would leave only mild doses and remove the harmful arm.
+- **Resolution:** doses are matched on the mean per-pixel CIELAB colour difference ΔE (2, 4, 6, 8, 10), which
+  every family reaches; SSIM is reported for every dose. The dose table was fixed on training-split tiles
+  only and is committed (`configs/shift_doses_camelyon17.json`). Limitation stated: at equal ΔE, blur
+  changes structure far more than stain does, so any equal-size yardstick embeds a judgement.
 

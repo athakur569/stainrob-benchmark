@@ -1,0 +1,84 @@
+#!/usr/bin/env python3
+"""Fix the synthetic-shift dose table on training-split tiles (pixels only; no labels or models).
+
+For every family and every target colour difference (mean CIELAB ΔE), find the strength that
+reaches it on a fixed calibration sample: tiles from patients in the TRAINING split, 10 per
+(centre, label), seed 0. SSIM at each dose is recorded as a secondary description (DR-014).
+
+    python scripts/calibrate_shifts.py --tiles /media/abhi/camelyon17/derived/tiles_v1 \\
+        --out configs/shift_doses_camelyon17.json
+"""
+
+import argparse
+import json
+from datetime import date
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+from PIL import Image
+from tqdm import tqdm
+
+from stain_benchmark.data.shifts import FAMILIES, calibrate_strength, mean_measure
+
+TARGETS_DELTA_E = [2.0, 4.0, 6.0, 8.0, 10.0]
+PER_CELL = 10          # tiles per (centre, label) in the calibration sample
+SEED = 0
+
+
+def calibration_sample(tiles_dir: Path) -> pd.DataFrame:
+    man = pd.read_csv(tiles_dir / "manifest.csv")
+    man = man[man["qc_pass"]]
+    ps = pd.read_csv(tiles_dir / "splits" / "patient_splits.csv")
+    pool = man[man["patient_id"].isin(set(ps.loc[ps["split"] == "train", "patient_id"]))]
+    return (pool.groupby(["center", "label"], group_keys=False)
+                .apply(lambda g: g.sample(min(PER_CELL, len(g)), random_state=SEED))
+                .reset_index(drop=True))
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--tiles", required=True)
+    ap.add_argument("--out", required=True)
+    args = ap.parse_args()
+    tiles_dir, out = Path(args.tiles), Path(args.out)
+    if out.exists():
+        raise SystemExit(f"{out} exists: the dose table is fixed; delete it deliberately to recalibrate")
+
+    sample = calibration_sample(tiles_dir)
+    imgs = [np.array(Image.open(tiles_dir / p).convert("RGB")) for p in sample["path"]]
+    keys = sample["tile_id"].tolist()
+    freeze = json.loads((tiles_dir / "freeze.json").read_text())
+
+    doses = {}
+    for fam in tqdm(FAMILIES, desc="families"):
+        doses[fam] = []
+        for target in TARGETS_DELTA_E:
+            s, achieved = calibrate_strength(imgs, fam, target, measure="delta_e", seed=SEED, keys=keys)
+            doses[fam].append({
+                "target_delta_e": target, "strength": round(s, 4),
+                "achieved_delta_e": round(achieved, 3),
+                "achieved_ssim": round(mean_measure(imgs, fam, s, "ssim", SEED, keys), 4),
+                "reached": bool(abs(achieved - target) <= 0.25),
+            })
+            print(f"{fam:9s} ΔE {target:4.1f} → strength {s:7.3f} (ΔE {achieved:5.2f}, "
+                  f"SSIM {doses[fam][-1]['achieved_ssim']:.3f})", flush=True)
+
+    record = {
+        "dataset": freeze.get("split", {}).get("project_id"),
+        "freeze_master_sha256": freeze["master_sha256"],
+        "created": date.today().isoformat(),
+        "matching_measure": "mean per-pixel CIELAB ΔE76 between tile and shifted tile (DR-014)",
+        "calibration_sample": {"rule": f"training-split patients; {PER_CELL} tiles per (centre, label); seed {SEED}",
+                               "n_tiles": len(sample), "tile_ids": keys},
+        "shift_seed": SEED,
+        "doses": doses,
+    }
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(record, indent=2))
+    unreached = [(f, d["target_delta_e"]) for f, ds in doses.items() for d in ds if not d["reached"]]
+    print(f"\nwrote {out}; unreached targets: {unreached or 'none'}")
+
+
+if __name__ == "__main__":
+    main()
