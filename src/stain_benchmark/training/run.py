@@ -12,6 +12,8 @@ Run directory contents:
     predictions_<role>.csv   one row per tile: ids, label, logits, p_tumour
     features_<role>.npy      float16 (n_tiles, 2048), rows aligned with predictions_<role>.csv
     model.pt                 final weights
+    reference_tiles.csv      E2/E3 only: the training tiles the stain reference was fitted on
+    normalizer.npz           E2/E3 only: the fitted reference parameters
 
 Pre-registration lock: test roles (``test_in``, ``test_cross``) are only scored once
 ``docs/analysis_plan.md`` is committed to git with no uncommitted changes, so no test result can
@@ -29,14 +31,19 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import torch
+from PIL import Image
 from sklearn.metrics import roc_auc_score
 from torch import nn
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from stain_benchmark.data.dataset import ROLES, TileDataset, make_loaders
+from stain_benchmark.data.dataset import ROLES, TileDataset, fold_table, make_loaders
+from stain_benchmark.data.freeze import verify_freeze
 from stain_benchmark.evaluation.metrics import compute_calibration_slope
 from stain_benchmark.models.classifier.lightning_module import ResNet50Classifier
+from stain_benchmark.normalization.base import StainNormalizer
+from stain_benchmark.normalization.macenko import MacenkoNormalizer
+from stain_benchmark.normalization.reinhard import ReinhardNormalizer
 from stain_benchmark.utils.reproducibility import (
     WorkerInitFn,
     compute_experiment_hash,
@@ -44,7 +51,10 @@ from stain_benchmark.utils.reproducibility import (
     set_seed,
 )
 
-CONDITIONS = ("E1",)  # E2, E3 and E5 are added as their pieces are built
+CONDITIONS = ("E1", "E2", "E3")  # E5 is added when its piece is built
+NORMALIZERS = {"E2": MacenkoNormalizer, "E3": ReinhardNormalizer}
+N_REFERENCE = 200       # tiles the stain reference is fitted on (DR-013)
+REFERENCE_SEED = 0      # fixed, so every training seed of a fold shares one reference
 REPO = Path(__file__).resolve().parents[3]
 ANALYSIS_PLAN = "docs/analysis_plan.md"
 
@@ -92,6 +102,22 @@ def build_model(pretrained: bool = True) -> ResNet50Classifier:
     model = ResNet50Classifier(num_classes=2, pretrained=pretrained, dropout=0.5)
     model.backbone.avgpool = GlobalMeanPool()
     return model
+
+
+def fit_reference(condition: str, tiles_dir: Path, table: pd.DataFrame,
+                  n: int = N_REFERENCE) -> tuple[StainNormalizer | None, pd.DataFrame]:
+    """Stain normaliser for ``condition`` fitted on ``n`` training tiles of this fold (DR-013).
+
+    Only ``train`` rows are eligible, so the held-out centre never informs the reference. The
+    sampled tiles are stacked into one tall image and the normaliser is fitted on it. E1 has none.
+    """
+    if condition not in NORMALIZERS:
+        return None, table.iloc[:0]
+    train = table[table["role"] == "train"].reset_index(drop=True)
+    rng = np.random.default_rng(REFERENCE_SEED)
+    ref = train.iloc[np.sort(rng.choice(len(train), min(n, len(train)), replace=False))]
+    mosaic = np.concatenate([np.array(Image.open(tiles_dir / p).convert("RGB")) for p in ref["path"]], axis=0)
+    return NORMALIZERS[condition]().fit(mosaic), ref
 
 
 def _git_state(repo: Path) -> tuple[str, bool]:
@@ -150,8 +176,15 @@ def train_run(tiles_dir: str | Path, holdout: str | int, seed: int, run_dir: str
     set_seed(seed, deterministic=True)
     dev = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
 
+    if verify:
+        verify_freeze(tiles_dir)               # before any tile is read
+    normalizer, ref = fit_reference(condition, tiles_dir, fold_table(tiles_dir, holdout))
+    if normalizer is not None:
+        ref[["tile_id", "patient_id", "center", "label"]].to_csv(run_dir / "reference_tiles.csv", index=False)
+        normalizer.save(run_dir / "normalizer.npz")
+    norm_fn = normalizer.transform if normalizer is not None else None
     loaders, table = make_loaders(tiles_dir, holdout, seed, batch_size=schedule.batch_size,
-                                  num_workers=num_workers, verify=verify)
+                                  num_workers=num_workers, normalizer=norm_fn, verify=False)
     model = build_model(pretrained).to(dev)
     opt = torch.optim.SGD(model.parameters(), lr=schedule.lr, momentum=schedule.momentum,
                           weight_decay=schedule.weight_decay)
@@ -184,7 +217,8 @@ def train_run(tiles_dir: str | Path, holdout: str | int, seed: int, run_dir: str
     metrics = {}
     for role in roles:
         sub = table[table["role"] == role].reset_index(drop=True)
-        loader = DataLoader(TileDataset(tiles_dir, sub, augment=False), batch_size=128, shuffle=False,
+        loader = DataLoader(TileDataset(tiles_dir, sub, normalizer=norm_fn, augment=False),
+                            batch_size=128, shuffle=False,
                             num_workers=num_workers, worker_init_fn=WorkerInitFn(seed),
                             pin_memory=dev.type == "cuda")
         logits, feats = predict(model, loader, dev)

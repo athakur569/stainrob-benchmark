@@ -34,6 +34,7 @@ Status: **RESOLVED** · **OPEN** (work pending) · **DECISION** (design choice s
 | ISS-037 | 2026-10 | methods | E5 (DANN) classifier head differs from E1 | RESOLVED |
 | ISS-039 | 2026-10 | statistics | Neighbouring tiles are correlated; tests must resample patients or slides | OPEN |
 | ISS-040 | 2026-10 | reproducibility | Worker seeding replayed the same augmentations every epoch | RESOLVED |
+| ISS-041 | 2026-10 | normalisation | Macenko (E2) turned real tiles nearly black | RESOLVED |
 
 ---
 
@@ -204,4 +205,13 @@ Status: **RESOLVED** · **OPEN** (work pending) · **DECISION** (design choice s
 - **Resolution:** workers are now seeded from the loader's own seeded generator — different per worker
   and per epoch, identical for the same base seed. Augmentation itself is geometric only (flips and 90°
   rotations); colour augmentation is excluded because it is a stain-handling method in its own right.
+
+### ISS-041 · normalisation · Macenko (E2) turned real tiles nearly black
+- **Found:** checking E2 on real training tiles before any E2 run: every normalised tile came out nearly
+  black. Synthetic test tiles (no background) had not exposed it.
+- **Cause:** haematoxylin and eosin rows were ordered backwards, SVD signs were not oriented toward
+  positive optical density, and the stain-amount rescaling had no guard; a tile and the reference ordered
+  differently were rescaled against the wrong dye.
+- **Resolution:** signs oriented, rows ordered by red absorbance (haematoxylin first), rescaling guarded.
+  On real tiles: no dark outputs, H&E appearance preserved. Regression tests added. No E2 results existed.
 

@@ -102,3 +102,25 @@ def test_plan_lock_on_a_git_repo(tmp_path):
     (tmp_path / "docs" / "analysis_plan.md").write_text("changed\n")
     with pytest.raises(PreRegistrationError, match="uncommitted"):
         require_committed_plan(tmp_path)
+
+
+@pytest.mark.parametrize("condition", ["E2", "E3"])
+def test_stain_reference_from_training_tiles_only(frozen, tmp_path, condition):
+    for seed in (1, 2):
+        train_run(frozen, holdout=1, seed=seed, run_dir=tmp_path / f"{condition}_{seed}", condition=condition,
+                  schedule=TINY, num_workers=0, device="cpu", pretrained=False, progress=False,
+                  require_plan=False)
+    ref1 = pd.read_csv(tmp_path / f"{condition}_1" / "reference_tiles.csv")
+    ref2 = pd.read_csv(tmp_path / f"{condition}_2" / "reference_tiles.csv")
+    assert 1 not in set(ref1.center)                             # never the held-out centre
+    assert ref1.tile_id.tolist() == ref2.tile_id.tolist()        # same reference for every seed
+    assert (tmp_path / f"{condition}_1" / "normalizer.npz").exists()
+
+
+def test_normalised_condition_changes_inputs(frozen, tmp_path):
+    from stain_benchmark.data.dataset import fold_table
+    from stain_benchmark.training.run import fit_reference
+    table = fold_table(frozen, holdout=1)
+    norm, ref = fit_reference("E3", frozen, table)
+    assert norm is not None and len(ref) == (table.role == "train").sum()     # fewer than 200 available
+    assert fit_reference("E1", frozen, table)[0] is None

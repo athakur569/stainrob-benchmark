@@ -158,13 +158,12 @@ class MacenkoNormalizer(StainNormalizer):
         # Get stain concentrations for each pixel
         concentrations = self._get_concentrations(image, stain_matrix_src)
 
-        # Normalize concentrations
-        concentrations *= (self._max_c_ref / max_c_src).reshape(1, -1)
+        # Rescale each stain so its 99th-percentile amount matches the reference's
+        concentrations *= (self._max_c_ref / np.maximum(max_c_src, 1e-6)).reshape(1, -1)
 
-        # Reconstruct image with reference stain matrix
-        normalized = self._reconstruct(concentrations, self._stain_matrix_ref)
-
-        return normalized
+        # Reconstruct image with reference stain matrix, in the input's shape
+        od_flat = concentrations @ self._stain_matrix_ref
+        return self._od_to_rgb(od_flat).reshape(image.shape)
 
     def _get_stain_matrix(
         self,
@@ -199,20 +198,18 @@ class MacenkoNormalizer(StainNormalizer):
             )
             return self.HE_REF.copy(), self.MAX_C_REF.copy()
 
-        # Compute SVD
-        # Center the data
-        od_mean = od_tissue.mean(axis=0)
-        od_centered = od_tissue - od_mean
-
-        # SVD to find principal directions
+        # SVD of the (uncentred) tissue OD: every pixel is a non-negative mix of two stain
+        # vectors, so the pixels lie in a plane through the origin spanned by them.
         try:
-            _, _, Vt = linalg.svd(od_centered, full_matrices=False)
+            _, _, Vt = linalg.svd(od_tissue, full_matrices=False)
         except linalg.LinAlgError:
             logger.warning("SVD failed. Using standard reference.")
             return self.HE_REF.copy(), self.MAX_C_REF.copy()
 
-        # Project onto the plane spanned by the two principal directions
+        # SVD signs are arbitrary; orient both plane directions toward positive OD, since
+        # absorbance is never negative.
         V = Vt[:2, :].T  # (3, 2)
+        V = V * np.where(V.sum(axis=0) < 0, -1.0, 1.0)
         proj = od_tissue @ V  # (N, 2)
 
         # Find the angle of each point in the plane
@@ -230,9 +227,9 @@ class MacenkoNormalizer(StainNormalizer):
         stain1 = V @ v1
         stain2 = V @ v2
 
-        # Ensure correct order: H (more blue) vs E (more pink)
-        # Hematoxylin has higher OD in red channel relative to blue
-        if stain1[0] < stain2[0]:
+        # Order rows as [H, E]: haematoxylin absorbs more red light than eosin, so the H vector
+        # has the larger red (first) component.
+        if stain1[0] >= stain2[0]:
             stain_matrix = np.vstack([stain1, stain2])
         else:
             stain_matrix = np.vstack([stain2, stain1])
@@ -352,7 +349,7 @@ class MacenkoNormalizer(StainNormalizer):
         concentrations = self._get_concentrations(image, stain_matrix_src)
 
         # Normalize concentrations
-        concentrations *= (self._max_c_ref / max_c_src).reshape(1, -1)
+        concentrations *= (self._max_c_ref / np.maximum(max_c_src, 1e-6)).reshape(1, -1)
 
         # Reconstruct OD
         od_flat = concentrations @ self._stain_matrix_ref

@@ -76,3 +76,24 @@ def test_macenko_recovers_stain_vectors():
 
 def test_identity_is_unchanged():
     assert np.array_equal(IdentityNormalizer().fit(REF).transform(OTHER), OTHER)
+
+
+def test_macenko_stain_rows_are_h_then_e_and_non_negative():
+    for img in (REF, OTHER, np.ascontiguousarray(REF[:, ::-1])):
+        sv, _ = MacenkoNormalizer()._get_stain_matrix(img)
+        assert (sv >= -1e-6).all()                      # absorbance is never negative
+        assert sv[0, 0] > sv[1, 0]                      # H absorbs more red than E
+
+
+def test_macenko_preserves_brightness_with_background():
+    # Tiles with white background (as real tiles have) and a reference fitted on a different
+    # tile stacked into a mosaic: the output must stay a tissue image, not go dark.
+    def with_background(img):
+        out = img.copy(); out[:, : img.shape[1] // 3] = 245
+        return out
+    ref = np.concatenate([with_background(he_tile(s)) for s in (3, 4, 5)], axis=0)
+    src = with_background(OTHER)
+    out = MacenkoNormalizer().fit(ref).transform(src)
+    assert out.shape == src.shape
+    assert abs(float(out.mean()) - float(src.mean())) < 40
+    assert out[:, : src.shape[1] // 3].mean() > 200     # background stays light
