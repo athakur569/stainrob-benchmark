@@ -28,10 +28,10 @@ Status: **RESOLVED** · **OPEN** (work pending) · **DECISION** (design choice s
 | ISS-026 | 2026-10 | reproducibility | GPU determinism needs `CUBLAS_WORKSPACE_CONFIG` | OPEN |
 | ISS-028 | 2026-10 | data | CAMELYON17 labels were guessed from file paths | RESOLVED |
 | ISS-029 | 2026-10 | splits | TCGA bootstrap script rebuilds splits on every run | OPEN |
-| ISS-030 | 2026-10 | methods | DANN as written is domain adaptation, not generalisation | DECISION |
+| ISS-030 | 2026-10 | methods | DANN as written is domain adaptation, not generalisation | RESOLVED |
 | ISS-031 | 2026-10 | statistics | Bootstrap resamples tiles, not patients | OPEN |
-| ISS-036 | 2026-10 | statistics | Three seeds cannot support the planned paired tests | DECISION |
-| ISS-037 | 2026-10 | methods | E5 (DANN) classifier head differs from E1 | DECISION |
+| ISS-036 | 2026-10 | statistics | Three seeds cannot support the planned paired tests | RESOLVED |
+| ISS-037 | 2026-10 | methods | E5 (DANN) classifier head differs from E1 | RESOLVED |
 | ISS-039 | 2026-10 | statistics | Neighbouring tiles are correlated; tests must resample patients or slides | OPEN |
 
 ---
@@ -154,7 +154,9 @@ Status: **RESOLVED** · **OPEN** (work pending) · **DECISION** (design choice s
 - **Problem:** `DANNModule` trains with unlabelled images from the held-out center. That is domain
   adaptation (the new site's images are seen in training), not domain generalisation, and it
   changes what E5 can claim.
-- **Decision needed:** adaptation (target images allowed) or generalisation (training centers only).
+- **Resolution (2026-10-30):** generalisation. E5's domain classifier distinguishes the four training
+  centres; the held-out centre is never seen. Adaptation would train on the deployment site's images
+  and score the monitor on images the features were aligned to; it is deferred to Paper 2.
 
 ### ISS-031 · statistics · Bootstrap resamples tiles, not patients
 - **Problem:** `bootstrap_ci` resamples individual values; tiles are clustered within patients, so
@@ -172,12 +174,16 @@ Status: **RESOLVED** · **OPEN** (work pending) · **DECISION** (design choice s
   the unit of replication does not solve it for a Wilcoxon test: with 5 pairs the smallest
   two-sided p-value is 2/2⁵ = 0.0625.
 - **Evidence:** `tests/test_statistical_tests.py::test_wilcoxon_cannot_reach_005_with_three_pairs`.
+- **Resolution (2026-10-30):** estimation, not significance testing. The centre is the unit of
+  replication; seeds are averaged within each fold; every per-fold value is shown with a
+  patient-clustered interval; the controlled synthetic-shift arm carries the inferential weight.
 
 ### ISS-037 · methods · E5 classifier head differs from E1
 - **Problem:** E1–E3 use ResNet-50 with dropout and one linear layer; `DANNModule` (E5) uses a
   2048 → 256 → 2 head. The design requires identical downstream models with only stain handling
   varying, so an E5-vs-E1 difference would mix the effect of DANN with the effect of the head.
-- **Plan:** give both the same head when E5 is built (with ISS-030).
+- **Resolution (2026-10-30):** E5 uses E1's head (dropout + one linear layer), so any difference
+  comes from DANN alone and Tier 2 reads the same layer in every condition.
 
 ### ISS-039 · statistics · Neighbouring tiles are correlated
 - **Checked:** frozen tiles do not overlap — the grid stride equals the tile size, and the largest
