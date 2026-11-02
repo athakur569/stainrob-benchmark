@@ -308,3 +308,7 @@ Status: **RESOLVED** · **OPEN** (work pending) · **DECISION** (design choice s
   tier cannot be interpreted as specified. Two permutation-invariant alternatives are implemented and specified before
   running (`docs/posthoc_analyses.md`, P1b/P1c): projection fitted on both batches pooled, or on a set disjoint from
   both (in deployment, the training tiles). Both are label-free.
+- **P1b result:** with the projection fitted on both batches pooled and patient clusters, every Tier 1 row holds
+  α = 0.05 (mean false-alarm rate over folds: pixel statistics 0.023, DenseNet-121 0.032, ResNet-50 0.042; maximum
+  0.060). ResNet-50 falls from 0.543 to 0.042. Slide clusters stay at 0.21–0.43 with either projection: ISS-046 and
+  ISS-049 are separate faults, and both fixes are needed.

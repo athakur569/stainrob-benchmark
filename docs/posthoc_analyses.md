@@ -45,6 +45,12 @@ and 0.00.
 standardisation and components fitted on reference and deployment together. This is label-free and available at
 deployment, and it keeps the two batches symmetric.
 
+**P1b result (200 splits × 5 folds, patient-split nulls, α = 0.05).** False-alarm rate with patient clusters, mean
+(range over folds), reference-fitted → pooled projection: Tier 1a 0.026 (0.015–0.035) → 0.023 (0.010–0.035);
+DenseNet-121 0.058 (0.035–0.080) → 0.032 (0.010–0.055); ResNet-50 0.543 (0.42–0.595) → 0.042 (0.015–0.060).
+With slide clusters, pooled: 0.21–0.43 for every Tier 1 row; slide clusters remain wrong whatever the projection.
+Pooled projection with patient clusters holds α for every tier.
+
 **P1c — added before running (raised by career-ops):** a third arm, `--fit-on external`: the projection is fitted on a
 set disjoint from both batches, so it does not depend on the split at all. To stay on training tiles, each null split
 divides the training patients into thirds (projection / reference / deployment). In P3 the external set is the fold's
