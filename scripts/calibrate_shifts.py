@@ -70,7 +70,8 @@ def main() -> None:
                 "achieved_delta_e": round(achieved, 3),
                 "achieved_ssim": round(mean_measure(imgs, fam, s, "ssim", SEED, keys), 4),
                 "reached": bool(abs(achieved - target) <= 0.25),
-                "grid": "common" if target in TARGETS_DELTA_E else "extended (pilot, DR-020)",
+                "grid": ("common" if target in TARGETS_DELTA_E else
+                         "post hoc" if fam in EXTRA_FAMILIES else "extended (pilot, DR-020)"),
             })
             print(f"{fam:9s} ΔE {target:4.1f} → strength {s:7.3f} (ΔE {achieved:5.2f}, "
                   f"SSIM {doses[fam][-1]['achieved_ssim']:.3f})", flush=True)
@@ -85,6 +86,8 @@ def main() -> None:
         "shift_seed": SEED,
         "doses": doses,
     }
+    if any(f in EXTRA_FAMILIES for f in families):
+        record["status"] = "POST HOC — not part of the pre-registered dose table (ISS-044)"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(record, indent=2))
     unreached = [(f, d["target_delta_e"]) for f, ds in doses.items() for d in ds if not d["reached"]]
