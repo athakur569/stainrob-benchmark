@@ -29,7 +29,7 @@ Status: **RESOLVED** · **OPEN** (work pending) · **DECISION** (design choice s
 | ISS-028 | 2026-10 | data | CAMELYON17 labels were guessed from file paths | RESOLVED |
 | ISS-029 | 2026-10 | splits | TCGA bootstrap script rebuilds splits on every run | OPEN |
 | ISS-030 | 2026-10 | methods | DANN as written is domain adaptation, not generalisation | RESOLVED |
-| ISS-031 | 2026-10 | statistics | Bootstrap resamples tiles, not patients | OPEN |
+| ISS-031 | 2026-10 | statistics | Bootstrap resamples tiles, not patients | RESOLVED |
 | ISS-036 | 2026-10 | statistics | Three seeds cannot support the planned paired tests | RESOLVED |
 | ISS-037 | 2026-10 | methods | E5 (DANN) classifier head differs from E1 | RESOLVED |
 | ISS-039 | 2026-10 | statistics | Neighbouring tiles are correlated; tests must resample patients or slides | OPEN |
@@ -167,7 +167,9 @@ Status: **RESOLVED** · **OPEN** (work pending) · **DECISION** (design choice s
 ### ISS-031 · statistics · Bootstrap resamples tiles, not patients
 - **Problem:** `bootstrap_ci` resamples individual values; tiles are clustered within patients, so
   intervals for AUC and ΔG would be too narrow.
-- **Plan:** a patient-clustered bootstrap.
+- **Resolution:** a patient-clustered bootstrap (`evaluation/bootstrap.py`): patients are resampled with
+  replacement, stratified by whether they have tumour tiles, for AUROC, calibration slope and ΔG; conditions
+  that share patients (synthetic shifts) are resampled jointly so their differences get honest intervals.
 
 ### ISS-036 · statistics · Three seeds cannot support the planned paired tests
 - **Problem:** the plan compares conditions with paired t-tests and Wilcoxon tests over three seeds
