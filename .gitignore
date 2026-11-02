@@ -33,6 +33,7 @@ data/*/slides/
 results/
 outputs/
 figures/
+!docs/figures/
 logs/
 
 # -----------------------------------------------------------------------------

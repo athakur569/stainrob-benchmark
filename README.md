@@ -5,9 +5,11 @@ Technology) on **label-free validity monitoring for computational pathology**: d
 when stain or scanner variation at a new site has made a deployed model's outputs
 unreliable, without needing new labels at that site.
 
-> **Status: work in progress (October 2026).** The data pipeline for CAMELYON17 is built,
-> tested and frozen. Model training and all experiments (E1–E9) have **not been run yet**;
-> this repository contains **no results**. See [What exists today](#what-exists-today).
+> **Status: work in progress (November 2026).** The full pipeline for the CAMELYON17
+> rehearsal is built and tested end to end — data, training of four conditions, synthetic
+> shifts, monitor features and statistics — and checked on real tiles. **No test-set result
+> exists yet:** test sets are sealed in code until the analysis plan
+> ([draft](docs/analysis_plan_DRAFT.md)) is committed. See [What exists today](#what-exists-today).
 
 ## The question
 
@@ -26,6 +28,10 @@ The approach, developed in three papers:
 2. **Prescribe (Paper 2, planned).** Map the type of shift to a corrective action.
 3. **Verify (Paper 3, planned).** Check that correct predictions rest on the right tissue.
 
+The central claim to test: **image change is not the same as harm.** A monitor should flag the
+shifts that cost accuracy (for example, out-of-focus scanning) and not the ones that don't (for
+example, a modest stain-colour change) — something a simple measure of image difference cannot do.
+
 The method assumes **covariate shift**: image appearance changes, while the relationship
 between tissue and diagnosis does not. That fits stain and scanner variation. It does not
 cover changes in label definitions or patient population.
@@ -34,30 +40,55 @@ cover changes in label definitions or patient population.
 
 Public, de-identified data only (IRB: Exempt).
 
-- **CAMELYON17** (Paper 1): lymph-node H&E slides, 5 centers, 100 patients, 500 slides,
-  slide-level stage labels, and tumour outlines on 50 slides.
-- **TCGA** (BRCA, COAD, LUAD; later): deferred. In these cohorts every normal-tissue
-  slide is a frozen section, so tumour-vs-normal is confounded with tissue preparation
-  (see `docs/research_log.md`, ISS-012).
+- **CAMELYON17 — the rehearsal.** Lymph-node H&E slides, 5 hospitals (three scanner types),
+  100 patients, 500 slides, tumour outlines on 50 slides. Small enough to exercise and debug
+  every step quickly. Only 4–7 patients per hospital have outlined tumour, so its five
+  real hospitals give descriptive results; the inferential weight rests on a controlled
+  synthetic-shift experiment, where the same patients are compared under different shifts.
+- **TCGA (BRCA, COAD, LUAD) — the full study, later.** Starts afresh; nothing tuned on
+  CAMELYON17 is carried over. In these cohorts every normal-tissue slide is a frozen section,
+  so the task must first be redesigned (`docs/research_log.md`, ISS-012).
 
 Slides are not in this repository. `scripts/download_camelyon17.py` registers a local
 copy and builds the slide table.
 
 ## What exists today
 
-| Step | State | Where |
+Every row is built and covered by the test suite (173 tests); "checked on real tiles" means the
+step was also run on the frozen CAMELYON17 tiles and inspected before use.
+
+| Step | Where | Checked on real tiles |
 |---|---|---|
-| One slide table for every dataset (slide, patient, center, label, role) | Built, tested | `data/metadata.py` |
-| Tiling: 0.5 µm/px, 256 px tiles, tissue ≥ 70%, tumour ≥ 50% inside an outline, normals ≥ 128 µm from any outline | Built, tested | `data/tiling.py`, `scripts/tiling_*.py` |
-| Quality control (blur, entropy) | Built, tested | `data/tiling.py` |
-| Patient-level splits within each center; leave-one-center-out folds | Built, tested | `data/splitting.py`, `scripts/create_splits.py` |
-| SHA256 freeze of tiles, config, metadata and splits | Built, tested | `data/freeze.py`, `scripts/freeze_dataset.py` |
-| Stain normalisation: Macenko (E2), Reinhard (E3) | Built, tested | `normalization/` |
-| ResNet-50 classifier (E1–E3), DANN with gradient reversal (E5) | Model code only; smoke-tested; never trained | `models/` |
-| Metrics: AUC, ΔG, per-center AUC, paired tests, Bonferroni | Built, tested | `evaluation/` |
-| Dataset loader, training loop, E1–E9 runs | **Not built** | — |
-| CycleGAN (E4), SimCLR (E6) | **Not built** | — |
-| Tier 1 / Tier 2 monitor | Separate package, `wsidrift` (synthetic tests only) | — |
+| Slide table, tiling at 0.5 µm/px, quality control, patient splits, SHA256 freeze | `data/` | yes — 11,763 tiles frozen; tiles verified against raw slides on all 5 scanners |
+| Fold loader: leave-one-hospital-out roles, freeze check at start-up | `data/dataset.py` | yes — 12–15 tumour patients in-domain per fold, 4–7 at the held-out hospital |
+| Training run: WILDS schedule, per-tile predictions and 2,048-d features saved | `training/run.py`, `scripts/train.py` | yes — bit-for-bit reproducible on GPU; loss levels off by epoch 8–10; ~4 min per run |
+| Conditions E1 (baseline), E2 (Macenko), E3 (Reinhard), E5 (DANN over training hospitals) | `training/run.py` | yes — see figure below; DANN's hospital-recognition falls from 83% to 32% (chance 25%) |
+| Synthetic shifts: blur, striping, clipped tissue, JPEG, stain colour; doses matched by colour difference | `data/shifts.py`, `configs/shift_doses_camelyon17.json` | yes — see figure below |
+| Monitor Tier 1: 23 pixel statistics; frozen generic-encoder features | `monitor/` | yes — 7,913 training-split tiles |
+| Monitor Tier 1/2 statistics and alarms (with slide-level calibration) | package [`wsidrift`](https://pypi.org/project/wsidrift/) | simulation: false alarms at the set rate |
+| Uncertainty: patient-clustered bootstrap, joint across conditions; predictor comparison | `evaluation/bootstrap.py` | tests |
+| Analysis plan | [`docs/analysis_plan_DRAFT.md`](docs/analysis_plan_DRAFT.md) | draft for review |
+| CycleGAN (E4), SimCLR (E6) | — | not part of the rehearsal |
+
+### Checks on real tiles
+
+Stain normalisers on one training tile per hospital (left: original; middle: Macenko; right: Reinhard).
+This check caught a bug that turned every Macenko output black (ISS-041) before any run used it.
+
+![Stain normalisers on real tiles](docs/figures/stain_normalisers_real_tiles.png)
+
+Each synthetic shift family at the five doses (colour difference ΔE 2–10), on one training tile:
+
+![Synthetic shifts on a real tile](docs/figures/synthetic_shifts_real_tile.png)
+
+### How results are protected
+
+- The tiles, splits and configuration are frozen and hashed; every run verifies the hashes first.
+- Test sets cannot be scored until `docs/analysis_plan.md` is committed to git
+  (`training/run.py`, `require_committed_plan`). The commit's timestamp shows the plan came first.
+  So far only training data has been scored.
+- Every problem met and every design decision is logged with its reasoning in
+  [`docs/research_log.md`](docs/research_log.md).
 
 ### The frozen CAMELYON17 tile set
 
@@ -103,32 +134,44 @@ python scripts/freeze_dataset.py --config configs/tiling_camelyon17.yaml --verif
 
 A run that reproduces the same tiles produces the same `freeze.json` hashes.
 
+Then, per condition, fold and seed (scoring training tiles only until the plan is committed):
+
+```bash
+python scripts/calibrate_shifts.py --tiles $OUT --out configs/shift_doses_camelyon17.json
+python scripts/train.py --tiles $OUT --runs /path/to/runs --condition E1 --holdout 0 --seed 42 --train-only
+python scripts/extract_tier1.py --tiles $OUT --out /path/to/tier1 --subset train-split
+```
+
 ## Repository map
 
 ```
-configs/                 tiling, QC and split settings (one file per dataset)
+configs/                 tiling/QC/split settings; synthetic-shift dose table
 data/camelyon17/         record of the frozen CAMELYON17 tile set (hashes, splits, manifest)
-docs/research_log.md     problems met, their causes and resolutions, and open design decisions
-scripts/                 command-line steps (download, tile, QC review, split, freeze)
-src/stain_benchmark/     data, normalization, models, evaluation, reproducibility utilities
+docs/analysis_plan_DRAFT.md   the analysis plan under review (not yet in force)
+docs/research_log.md     problems met, their causes and resolutions, and design decisions
+docs/figures/            checks on real tiles
+scripts/                 command-line steps (tile, split, freeze, train, calibrate shifts, extract features)
+src/stain_benchmark/     data, normalization, models, training, monitor features, evaluation
 tests/                   pytest suite
 ```
 
-## Known open questions
+## Open questions for review
 
-Recorded in `docs/research_log.md`; the main ones:
+Listed at the end of the [analysis plan draft](docs/analysis_plan_DRAFT.md) and in the research log:
 
-- **Statistical power (ISS-036).** Three seeds per condition are too few for the planned
-  paired tests (a Wilcoxon test on 3 pairs cannot reach p < 0.05). The analysis plan is
-  being revised toward patient-clustered bootstrap intervals (ISS-031).
-- **DANN design (ISS-030).** As written, E5 uses unlabelled images from the held-out center
-  (domain adaptation) and a different classifier head from E1 (ISS-037).
+- **Dose yardstick (ISS-042).** SSIM could not put stain changes and blur on one scale; doses are matched
+  by colour difference instead. Any yardstick embeds a judgement about "equal size", so the plan also
+  proposes testing directly whether the monitor predicts harm better than image-difference measures.
+- **Generic-encoder tier (ISS-043).** The ImageNet ResNet-50 used for Tier 1b starts from the same
+  weights as the classifier it monitors; an alternative encoder (DenseNet-121) is ready.
+- **Small rehearsal dataset (ISS-017).** 4–7 tumour patients per hospital limit what the five real
+  hospitals can show; this is why the controlled synthetic arm carries the inference.
 - **TCGA task (ISS-012).** Tumour-vs-normal is confounded with frozen vs FFPE preparation.
 
 ## Related
 
 - [`wsidrift`](https://pypi.org/project/wsidrift/) — the label-free Tier 1 / Tier 2 monitor,
-  as a separate package.
+  as a separate package (PyPI 0.1.1; slide-level calibration is on its main branch, unreleased).
 
 ## License
 
