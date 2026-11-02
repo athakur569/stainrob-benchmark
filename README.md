@@ -7,9 +7,9 @@ unreliable, without needing new labels at that site.
 
 > **Status: work in progress (November 2026).** The full pipeline for the CAMELYON17
 > rehearsal is built and tested end to end — data, training of four conditions, synthetic
-> shifts, monitor features and statistics — and checked on real tiles. **No test-set result
-> exists yet:** test sets are sealed in code until the analysis plan
-> ([draft](docs/analysis_plan_DRAFT.md)) is committed. See [What exists today](#what-exists-today).
+> shifts, monitor features and statistics — and checked on real tiles. The
+> [analysis plan](docs/analysis_plan.md) was committed on 2 November 2026, before any test-set result
+> existed; that commit is what opens the test sets in code. See [What exists today](#what-exists-today).
 
 ## The question
 
@@ -67,7 +67,7 @@ step was also run on the frozen CAMELYON17 tiles and inspected before use.
 | Monitor Tier 1: 23 pixel statistics; frozen generic-encoder features | `monitor/` | yes — 7,913 training-split tiles |
 | Monitor Tier 1/2 statistics and alarms (with slide-level calibration) | package [`wsidrift`](https://pypi.org/project/wsidrift/) | simulation: false alarms at the set rate |
 | Uncertainty: patient-clustered bootstrap, joint across conditions; predictor comparison | `evaluation/bootstrap.py` | tests |
-| Analysis plan | [`docs/analysis_plan_DRAFT.md`](docs/analysis_plan_DRAFT.md) | draft for review |
+| Analysis plan (pre-registration), dose-range pilot on training data | [`docs/analysis_plan.md`](docs/analysis_plan.md), `docs/pilot/` | committed before any test result |
 | CycleGAN (E4), SimCLR (E6) | — | not part of the rehearsal |
 
 ### Checks on real tiles
@@ -85,8 +85,8 @@ Each synthetic shift family at the five doses (colour difference ΔE 2–10), on
 
 - The tiles, splits and configuration are frozen and hashed; every run verifies the hashes first.
 - Test sets cannot be scored until `docs/analysis_plan.md` is committed to git
-  (`training/run.py`, `require_committed_plan`). The commit's timestamp shows the plan came first.
-  So far only training data has been scored.
+  (`training/run.py`, `require_committed_plan`); every run records the plan commit it ran under. The
+  plan's commit timestamp shows it came before any test result.
 - Every problem met and every design decision is logged with its reasoning in
   [`docs/research_log.md`](docs/research_log.md).
 
@@ -147,7 +147,8 @@ python scripts/extract_tier1.py --tiles $OUT --out /path/to/tier1 --subset train
 ```
 configs/                 tiling/QC/split settings; synthetic-shift dose table
 data/camelyon17/         record of the frozen CAMELYON17 tile set (hashes, splits, manifest)
-docs/analysis_plan_DRAFT.md   the analysis plan under review (not yet in force)
+docs/analysis_plan.md    the analysis plan (pre-registered; changes are numbered deviations)
+docs/pilot/              dose-range pilot results on training data
 docs/research_log.md     problems met, their causes and resolutions, and design decisions
 docs/figures/            checks on real tiles
 scripts/                 command-line steps (tile, split, freeze, train, calibrate shifts, extract features)
@@ -157,7 +158,7 @@ tests/                   pytest suite
 
 ## Open questions for review
 
-Listed at the end of the [analysis plan draft](docs/analysis_plan_DRAFT.md) and in the research log:
+Recorded in the [analysis plan](docs/analysis_plan.md) and the research log:
 
 - **Dose yardstick (ISS-042).** SSIM could not put stain changes and blur on one scale; doses are matched
   by colour difference instead. Any yardstick embeds a judgement about "equal size", so the plan also
