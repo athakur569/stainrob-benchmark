@@ -58,6 +58,10 @@ training tiles, disjoint from `test_in` and `test_cross`. Principle behind P1b a
 only if every quantity in its statistic is unchanged by permuting the batch labels; a projection fitted on one batch
 is not. The arm that holds α is chosen by power under shift in P3, not by false-alarm rate alone.
 
+**P1c result (thirds, patient clusters, mean (range) over folds):** Tier 1a 0.016 (0.010–0.025); DenseNet-121 0.023
+(0.010–0.050); ResNet-50 0.021 (0.010–0.040). Holds α for every tier. Lower than P1b, but on thirds rather than halves;
+P1d gives the matched contrast.
+
 **P1d — added before running (raised by career-ops):** P1c's thirds give each side about a third of the patients, P1/P1b
 halves. For a matched contrast, the reference-fitted and pooled arms are rerun on the **same** thirds as P1c (`--thirds`;
 the projection third unused), so the three arms differ only in where the projection is fitted. Headline rates stay
