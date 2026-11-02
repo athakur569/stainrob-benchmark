@@ -78,3 +78,24 @@ Tier 1; Mahalanobis, energy for Tier 2), as implemented in wsidrift with slide c
 **Why.** DR-004 and DR-018 make Tier 1b the primary input-level tier; the H3 prediction expects Tier 1a to
 over-weight stain, so making it primary for alarms would build the expected failure into the headline
 rule. Recorded by the research chat before any monitor statistic on a test tile was computed.
+
+## D5 · 2026-11-02 · How folds are labelled by their ΔG, and how alarms on them are scored (before folds 1–4)
+
+**What changes.** D3 called a fold whose ΔG interval includes 0 a "harmless shift". With 4–7 tumour patients
+in `test_cross`, that only means **no harm detected at this sample size**, and the percentile bootstrap may
+understate the uncertainty (run log, 2 Nov). Each fold is therefore labelled from its seed-averaged ΔG(AUROC)
+point estimate and 95% interval, with these thresholds, fixed before folds 1–4 were scored:
+
+| Label | Rule | Alarm on this fold is scored as |
+|---|---|---|
+| harm detected | interval lower bound > 0 | detection (silence = miss) |
+| no harm detected — clean | point ≤ 0.01 **and** interval upper bound ≤ 0.03 | false alarm (silence = correct) |
+| no harm detected — inconclusive | anything else | ambiguous: reported, not counted as false alarm or detection |
+
+Every fold's table row shows its label together with the point estimate and interval, so a reader can see
+what the label rests on. The label is an inferential state, never a property of the shift.
+
+**Applied to fold 0 (already scored):** seed-averaged ΔG ≈ −0.019; every seed's point estimate is
+negative and every upper bound ≤ +0.009 → "no harm detected — clean"; an alarm there would be a false alarm.
+
+**Raised by:** career-ops. Recorded by the research chat before folds 1–4 had any result.

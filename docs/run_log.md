@@ -28,3 +28,9 @@ Results in the order they were obtained, after the analysis plan was committed (
   subset added), and in `training/run.py` only `score_tiles` gained an optional feature output. The
   training code path (`train_run`, data loading, model, optimiser) did not change. Every run records the
   plan commit `927e44b`.
+- **To check across folds — possible hidden stratification:** two in-domain tumour patients are largely
+  missed by the fold-0 models (patient 092: 357 tiles, 53% scored below 0.5; patient 042: 179 tiles, 65%).
+  If the same patients, or patients like them, are missed in other folds, a subgroup the model handles badly
+  is hiding inside a high aggregate AUROC. Per-patient tumour-tile scores will be tabulated for every fold.
+- **For the paper:** every cross-hospital interval rests on 4–7 tumour patients, where a percentile bootstrap
+  tends to be too narrow; all such intervals are reported as lower bounds on the uncertainty.
