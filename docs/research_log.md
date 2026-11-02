@@ -32,7 +32,7 @@ Status: **RESOLVED** · **OPEN** (work pending) · **DECISION** (design choice s
 | ISS-031 | 2026-10 | statistics | Bootstrap resamples tiles, not patients | RESOLVED |
 | ISS-036 | 2026-10 | statistics | Three seeds cannot support the planned paired tests | RESOLVED |
 | ISS-037 | 2026-10 | methods | E5 (DANN) classifier head differs from E1 | RESOLVED |
-| ISS-039 | 2026-10 | statistics | Neighbouring tiles are correlated; tests must resample patients or slides | OPEN |
+| ISS-039 | 2026-10 | statistics | Neighbouring tiles are correlated; tests must resample patients or slides | RESOLVED |
 | ISS-040 | 2026-10 | reproducibility | Worker seeding replayed the same augmentations every epoch | RESOLVED |
 | ISS-041 | 2026-10 | normalisation | Macenko (E2) turned real tiles nearly black | RESOLVED |
 | ISS-042 | 2026-10 | methods | SSIM cannot match stain shifts to the other shift families | RESOLVED |
@@ -200,8 +200,10 @@ Status: **RESOLVED** · **OPEN** (work pending) · **DECISION** (design choice s
 - **Problem:** tumour tiles are mostly edge-to-edge neighbours from a few lesions, and neighbouring
   tiles are correlated. Permutation tests and bootstraps that treat tiles as independent would give
   too many false alarms and intervals that are too narrow.
-- **Plan:** resample and permute at the patient or slide level (with ISS-031), in both the
-  evaluation and the monitor's threshold calibration.
+- **Resolution:** evaluation intervals resample patients (ISS-031); the monitor's alarm tests (package
+  wsidrift) now permute or bootstrap whole slides. In simulation with strong slide effects and no real shift,
+  at a 10% false-alarm setting: tile-level tests alarmed 100% (Tier 1) and 52% (Tier 2) of the time;
+  slide-level tests 6% and 11%.
 
 ### ISS-040 · reproducibility · Worker seeding replayed augmentations every epoch
 - **Problem:** the data-loader worker seeding reset each worker's random generator to the same value at
