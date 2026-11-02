@@ -14,6 +14,7 @@ Status column: *specified* = written, not run · *run (training tiles only)* = n
 | P1 | ISS-046 | Patient-split null check | training tiles only | running (training tiles only) |
 | P2 | ISS-044 | Consistent-direction stain family (`stain_batch`) | test_in tiles, shifted | awaiting decision |
 | P3 | ISS-045, ISS-046 | Held-out reference and patient clusters for every tier | test_in, test_cross | awaiting decision |
+| P4 | ISS-048 | ΔG without individual tumour patients | existing test predictions | awaiting pathologist review |
 
 ## P1 · Patient-split null check
 
@@ -53,3 +54,20 @@ Two changes to the monitor, made together because both concern what the referenc
 Everything else as pre-registered (D2: standardisation and PCA-50 fitted on the reference, at most 8 tiles per slide,
 α = 0.05, AND rule Tier 1b AND Tier 2, seed majority D6). Reported: reference size (patients, tiles) per fold;
 pre-registered and P3 results side by side, neither called primary for Tier 2.
+
+## P4 · ΔG without individual tumour patients
+
+Some tumour patients are missed in every fold they appear in (ISS-048); with 4–7 tumour patients per held-out hospital
+one of them can change a fold's label. Two computations on the predictions already made (no new scoring):
+
+1. **Leave-one-tumour-patient-out ΔG**, every fold × condition: the seed-averaged ΔG recomputed with each tumour patient
+   removed in turn from `test_in` and from `test_cross` (the same patient-clustered bootstrap); reported as the range.
+   This needs no judgement about which patients to question.
+2. **With and without the patients a pathologist flags** as having outlines that enclose little tumour, after the review
+   of `docs/figures/missed_patients_e1.png` (and further tiles if needed). Both numbers are reported; no patient is
+   removed from the primary analysis.
+
+Patient roles, for reading the results: patient 042 is a validation-split patient of hospital 2 — never trained on; it
+is in `test_in` when hospital 2 is a training hospital and in `test_cross` when it is held out. Patients 052 (hospital 2)
+and 096 (hospital 4) are training-split patients: trained on in the folds where their hospital is a training hospital,
+scored only when it is held out.

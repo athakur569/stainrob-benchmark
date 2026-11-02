@@ -50,10 +50,13 @@ labelled by the D5 rule (fixed before folds 1–4 were scored).
 
 - **Hospital 2 is the one measurable gap, and every condition shows it.** This agrees with WILDS (Koh et al. 2021),
   which holds out the same hospital as its test site because models drop there. DANN has the smallest gap
-  (0.024) and the narrowest interval. Comparing conditions is H-level work for the full analysis, not this table.
+  (0.024) and the narrowest interval. The intervals overlap, and three seeds cannot separate "DANN reduces the gap"
+  from "DANN varies less", so this is a direction, not a claim that DANN is better.
 - **In-domain AUROC is high everywhere** (0.96–0.997). The ceiling contingency (§11) is checked on fold 0 only, by
   design, and did not fire there (0.974); in folds 1 and 2 E1 averages 0.985 and 0.996, so the real arm has little
   headroom in those folds. This supports the plan's choice to make the synthetic arm the controlled evidence.
+  Scope of the rule, stated plainly: it was written against fold 0 only (the first fold scored), before any fold
+  was scored. Had it been written across folds, folds 1 and 2 would have triggered it.
 - **Negative ΔG (the held-out hospital scores higher than in-domain) is common.** It reflects which patients each
   test set happens to contain, not a benefit of being out of domain (next point).
 - **Per-patient check (open question from fold 0), E1:** the same patients are missed whichever fold they fall in.
