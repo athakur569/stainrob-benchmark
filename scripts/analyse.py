@@ -70,8 +70,8 @@ def run_dir(c, f, s) -> Path:
     return G["runs"] / c / f"fold{f}" / f"seed{s}"
 
 
-def load_tier1(enc: str, subset: str, name: str) -> tuple[pd.DataFrame, np.ndarray, np.ndarray]:
-    d = G["tier1"] / subset / enc / name
+def load_tier1(base: Path, enc: str, subset: str, name: str) -> tuple[pd.DataFrame, np.ndarray, np.ndarray]:
+    d = base / subset / enc / name
     tiles = pd.read_csv(d / "tiles.csv")
     f1a = pd.read_csv(d / "tier1a.csv").drop(columns="tile_id").to_numpy()
     f1b = np.load(d / "tier1b.npy").astype(np.float64)
@@ -173,17 +173,19 @@ def main() -> None:
     ap.add_argument("--null-splits", type=int, default=200)
     ap.add_argument("--jobs", type=int, default=12)
     ap.add_argument("--folds", default=",".join(FOLDS))
+    ap.add_argument("--conditions", default=",".join(CONDITIONS), help="subset, e.g. for an early pipeline check")
     args = ap.parse_args()
     plan = require_committed_plan()
     out = Path(args.out); (out / "boots").mkdir(parents=True, exist_ok=True)
     folds = tuple(args.folds.split(","))
+    conds = tuple(args.conditions.split(","))
     meta = dose_meta(Path(args.doses))
     tiles_dir = Path(args.tiles)
     tables = {f: fold_table(tiles_dir, f) for f in folds}
     g = {"runs": Path(args.runs), "tier1": Path(args.tier1), "out": out, "meta": meta, "tables": tables,
          "boot": args.boot, "perm": args.perm}
-    g["t1_all"] = {enc: load_tier1(enc, "all", "unshifted") for enc in ENCODERS.values()}
-    g["t1_vt"] = {(enc, n): load_tier1(enc, "val_test", n) for enc in ENCODERS.values()
+    g["t1_all"] = {enc: load_tier1(g["tier1"], enc, "all", "unshifted") for enc in ENCODERS.values()}
+    g["t1_vt"] = {(enc, n): load_tier1(g["tier1"], enc, "val_test", n) for enc in ENCODERS.values()
                   for n in ["unshifted", *meta.index]}
     init(g)
     print(f"analysis under plan {plan[:7]}: folds {folds}, {len(meta)} doses, {args.boot} bootstrap resamples", flush=True)
@@ -192,10 +194,10 @@ def main() -> None:
         t1 = pd.DataFrame([r for rs in ex.map(tier1_job, [(f, b) for f in folds for b in ["real", "unshifted", *meta.index]])
                            for r in rs])
         print("Tier 1 done", flush=True)
-        t2 = pd.DataFrame([r for rs in ex.map(tier2_job, [(c, f, s) for f in folds for c in CONDITIONS for s in SEEDS])
+        t2 = pd.DataFrame([r for rs in ex.map(tier2_job, [(c, f, s) for f in folds for c in conds for s in SEEDS])
                            for r in rs])
         print("Tier 2 done", flush=True)
-        dgs = list(ex.map(dg_job, [(c, f) for f in folds for c in CONDITIONS]))
+        dgs = list(ex.map(dg_job, [(c, f) for f in folds for c in conds]))
         print("ΔG done", flush=True)
     t1.to_csv(out / "tier1_all.csv", index=False)
     t2.to_csv(out / "tier2_all.csv", index=False)
@@ -273,11 +275,12 @@ def main() -> None:
     pd.DataFrame(sl).to_csv(out / "matched_slice.csv", index=False)
 
     # ---- §9.6 alarm proportions (primary AND: Tier 1b AND Tier 2 majority of seeds; secondary: 1a AND 2)
-    ssig = ssig.merge(meta[["family", "delta_e"]], left_on="dose", right_index=True)
+    ssig = ssig.merge(meta[["family", "delta_e"]].rename(columns={"delta_e": "target_delta_e"}),
+                      left_on="dose", right_index=True)
     ssig["tier2_flag"] = ssig.tier2_flag_seeds >= 2
     ssig["and_primary"] = ssig.tier1b_flag & ssig.tier2_flag
     ssig["and_secondary"] = ssig.tier1a_flag & ssig.tier2_flag
-    ssig.groupby(["family", "delta_e"])[["tier1a_flag", "tier1b_flag", "tier2_flag", "and_primary", "and_secondary"]] \
+    ssig.groupby(["family", "target_delta_e"])[["tier1a_flag", "tier1b_flag", "tier2_flag", "and_primary", "and_secondary"]] \
         .mean().reset_index().to_csv(out / "alarms.csv", index=False)
 
     # ---- §9.7 realised false-alarm rate on null splits of each fold's training tiles
