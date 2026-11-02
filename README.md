@@ -168,6 +168,16 @@ Listed at the end of the [analysis plan draft](docs/analysis_plan_DRAFT.md) and 
   hospitals can show; this is why the controlled synthetic arm carries the inference.
 - **TCGA task (ISS-012).** Tumour-vs-normal is confounded with frozen vs FFPE preparation.
 
+## Known limitations
+
+- **The monitor package on PyPI (wsidrift 0.1.1) calibrates its alarms tile by tile.** On real CAMELYON17
+  tiles with no shift (training slides split into random halves), that raised an alarm in 82–100% of cases at
+  a nominal 10%. The fix (calibrating over whole slides: 2–5% on the same check) is on wsidrift's main
+  branch and is what this repository's analysis uses; it is not yet released on PyPI (ISS-039).
+- **Validation status of the monitor.** Tier 1 has been checked on real tiles under the null; detection of
+  real harmful shifts, and Tier 2 on real data, are what the sealed experiment will test.
+- **Rehearsal scale.** CAMELYON17 has 4–7 tumour patients per hospital; see the open questions above.
+
 ## Related
 
 - [`wsidrift`](https://pypi.org/project/wsidrift/) — the label-free Tier 1 / Tier 2 monitor,

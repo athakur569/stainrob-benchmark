@@ -203,7 +203,10 @@ Status: **RESOLVED** · **OPEN** (work pending) · **DECISION** (design choice s
 - **Resolution:** evaluation intervals resample patients (ISS-031); the monitor's alarm tests (package
   wsidrift) now permute or bootstrap whole slides. In simulation with strong slide effects and no real shift,
   at a 10% false-alarm setting: tile-level tests alarmed 100% (Tier 1) and 52% (Tier 2) of the time;
-  slide-level tests 6% and 11%.
+  slide-level tests 6% and 11%. On real tiles (CAMELYON17 training slides split into random halves, no
+  shift, 40 splits, nominal 10%): tile-level Tier 1 alarmed in 82% (pixel statistics) and 100% (DenseNet-121
+  features) of splits; slide-level in 5% and 2%. The version of the monitor package released on PyPI (0.1.1)
+  still uses tile-level calibration.
 
 ### ISS-040 · reproducibility · Worker seeding replayed augmentations every epoch
 - **Problem:** the data-loader worker seeding reset each worker's random generator to the same value at
