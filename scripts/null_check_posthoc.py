@@ -9,6 +9,9 @@ splits the training PATIENTS in half instead and runs each tier twice on the sam
     clusters = slide     the pre-registered monitor (D2)
     clusters = patient   the correction proposed after fold 0 (ISS-046)
 
+``--fit-on pooled`` fits the standardisation and principal components on both halves together instead of
+the reference half only (ISS-049); output columns are the same.
+
 Training tiles only: no test data is read. Not part of the pre-registered analysis; reported as a
 labelled post-hoc diagnostic.
 
@@ -39,7 +42,7 @@ def load_tier1(base: Path, enc: str):
 
 
 def job(args) -> dict:
-    fold, tier, tiles_dir, runs, tier1_dir, n_splits = args
+    fold, tier, tiles_dir, runs, tier1_dir, n_splits, fit_on = args
     if tier == "tier2":
         p = pd.read_csv(runs / "E1" / f"fold{fold}" / "seed42" / "predictions_train.csv")
         X = np.load(runs / "E1" / f"fold{fold}" / "seed42" / "features_train.npy").astype(np.float64)
@@ -64,8 +67,9 @@ def job(args) -> dict:
             if tier == "tier2":
                 flags[kind] += tier2(X[m], X[~m], ids[m], ids[~m], seed=i)["flagged"]
             else:
-                flags[kind] += tier1(X[m], X[~m], ids[m], ids[~m], ncomp, n_permutations=99, seed=i)["flagged"]
-    return {"fold": fold, "tier": tier, "patients": len(upat), "splits": n_splits, "nominal_alpha": ALPHA,
+                flags[kind] += tier1(X[m], X[~m], ids[m], ids[~m], ncomp, n_permutations=99, seed=i,
+                                     fit_on=fit_on)["flagged"]
+    return {"fold": fold, "tier": tier, "fit_on": fit_on, "patients": len(upat), "splits": n_splits, "nominal_alpha": ALPHA,
             "false_alarm_slide_clusters": flags["slide"] / n_splits,
             "false_alarm_patient_clusters": flags["patient"] / n_splits}
 
@@ -78,10 +82,13 @@ def main() -> None:
     ap.add_argument("--out", required=True)
     ap.add_argument("--splits", type=int, default=200)
     ap.add_argument("--jobs", type=int, default=10)
+    ap.add_argument("--fit-on", default="reference", choices=("reference", "pooled"))
+    ap.add_argument("--tiers", default=",".join(TIERS))
     args = ap.parse_args()
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
-    jobs = [(f, t, Path(args.tiles), Path(args.runs), Path(args.tier1), args.splits) for f in FOLDS for t in TIERS]
+    jobs = [(f, t, Path(args.tiles), Path(args.runs), Path(args.tier1), args.splits, args.fit_on)
+            for f in FOLDS for t in args.tiers.split(",")]
     rows = []
     with ProcessPoolExecutor(args.jobs) as ex:
         futs = [ex.submit(job, j) for j in jobs]

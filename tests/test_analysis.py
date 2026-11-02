@@ -55,3 +55,27 @@ def test_ordering_concordance():
     assert ordering_concordance(harm, flat)["concordant_pairs"] == 0      # ΔE at a matched dose: all tied
     rev = ordering_concordance(harm, -harm)
     assert rev["concordant_pairs"] == 0 and rev["predictor_order"].startswith("clipped")
+
+
+def test_prepare_pooled_is_symmetric_in_the_two_batches():
+    r = np.random.default_rng(0)
+    a, b = r.normal(size=(60, 30)), r.normal(size=(40, 30)) + 1
+    ra, rb = prepare(a, b, 5, fit_on="pooled")
+    pooled = np.vstack([ra, rb])
+    assert np.allclose(pooled.mean(0), 0, atol=1e-9)                     # centred on both batches together
+    sb, sa = prepare(b, a, 5, fit_on="pooled")
+    assert np.allclose(np.abs(np.vstack([ra, rb]).T @ np.vstack([ra, rb])),
+                       np.abs(np.vstack([sa, sb]).T @ np.vstack([sa, sb])))   # same subspace whichever is "reference"
+
+
+def test_reference_fitted_projection_false_alarms_in_high_dimension():
+    """ISS-049 in miniature: two halves of one population, few samples, many features."""
+    r = np.random.default_rng(1)
+    X = r.normal(size=(120, 400))
+    ids = np.repeat(np.arange(30), 4)
+    alarms = {"reference": 0, "pooled": 0}
+    for i in range(10):
+        m = np.isin(ids, np.random.default_rng(i).permutation(30)[:15])
+        for fit_on in alarms:
+            alarms[fit_on] += tier1(X[m], X[~m], ids[m], ids[~m], 10, n_permutations=49, seed=i, fit_on=fit_on)["flagged"]
+    assert alarms["reference"] >= 5 and alarms["pooled"] <= 2

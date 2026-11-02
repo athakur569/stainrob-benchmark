@@ -11,7 +11,7 @@ Status column: *specified* = written, not run · *run (training tiles only)* = n
 
 | ID | Addresses | What | Data it reads | Status |
 |---|---|---|---|---|
-| P1 | ISS-046 | Patient-split null check | training tiles only | running (training tiles only) |
+| P1 | ISS-046, ISS-049 | Patient-split null check (reference-fitted and pooled projection) | training tiles only | run (training tiles only) |
 | P2 | ISS-044 | Consistent-direction stain family (`stain_batch`) | test_in tiles, shifted | awaiting decision |
 | P3 | ISS-045, ISS-046 | Held-out reference and patient clusters for every tier | test_in, test_cross | awaiting decision |
 | P4 | ISS-048 | ΔG without individual tumour patients | existing test predictions | awaiting pathologist review |
@@ -24,6 +24,26 @@ instead (200 random halves per fold, seeded by fold and split index), and runs e
 with slide clusters (as pre-registered, D2) and with patient clusters. Tiers: 1a, 1b DenseNet-121, 1b ResNet-50,
 2 (E1, seed 42). Outcome: realised false-alarm rate against α = 0.05.
 Script: `scripts/null_check_posthoc.py`.
+
+**Result (reference-fitted projection, as pre-registered), false-alarm rate across the five folds:**
+
+| Tier | Slide clusters | Patient clusters |
+|---|---|---|
+| 1a pixel statistics | 0.285–0.375 | 0.015–0.035 |
+| 1b DenseNet-121 | 0.40–0.55 | 0.035–0.08 |
+| 1b ResNet-50 | 0.94–0.99 | 0.42–0.595 |
+| 2 Mahalanobis | 0.000–0.010 | 0.000–0.010 |
+
+Patient clusters fix Tier 1a. They do not fix ResNet-50, which a cluster permutation on a random patient split
+should not allow (the observed split is itself one of the permutations). The cause is upstream of the test (ISS-049):
+the standardisation and 50 principal components are fitted on the reference half only, so in 2,048 dimensions they
+capture that half's own patients, and the halves become distinguishable. Check on fold 1, 40 splits, patient clusters:
+ResNet-50 0.50 with reference-fitted projection, 0.00 with projection fitted on both halves pooled; DenseNet-121 0.05
+and 0.00.
+
+**P1b — added before running:** the same null check (Tier 1 rows, 200 splits, all folds) with `--fit-on pooled`:
+standardisation and components fitted on reference and deployment together. This is label-free and available at
+deployment, and it keeps the two batches symmetric.
 
 ## P2 · Consistent-direction stain family
 
@@ -48,8 +68,9 @@ Two changes to the monitor, made together because both concern what the referenc
      10 random halvings per fold (seeds 0–9); reported: median signal and the fraction of halvings that alarm.
      The unshifted B-vs-A comparison is the direct false-alarm check for this design.
    - ΔG is unchanged (all `test_in`), so the outcome is identical to the pre-registered one; only the predictors change.
-2. **Clusters = patients** instead of slides, for permutation (Tier 1) and cross-fitting/bootstrap (Tier 2), if P1
-   shows slide clusters exceed α on patient splits.
+2. **Clusters = patients** instead of slides, for permutation (Tier 1) and cross-fitting/bootstrap (Tier 2): P1 shows
+   slide clusters exceed α by 6–20× on patient splits.
+3. **Tier 1 projection fitted on reference and deployment pooled** (ISS-049), if P1b shows it holds α.
 
 Everything else as pre-registered (D2: standardisation and PCA-50 fitted on the reference, at most 8 tiles per slide,
 α = 0.05, AND rule Tier 1b AND Tier 2, seed majority D6). Reported: reference size (patients, tiles) per fold;
