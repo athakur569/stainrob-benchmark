@@ -87,3 +87,12 @@ def test_compare_predictors_ranks_the_good_predictor_first():
     assert out.loc["monitor", "rho"] == pytest.approx(1.0)
     assert out.loc["magnitude", "rho"] < out.loc["monitor", "rho"]
     assert out.loc["magnitude", "diff_high"] < 0                          # reliably worse than the monitor
+
+
+def test_joint_slope_delta_g_detects_flattened_probabilities():
+    ref = make_pred(sep=2.0)
+    flat = ref.assign(p_tumour=0.5 + 0.1 * (ref.p_tumour - 0.5))          # same ranking, squashed probabilities
+    point, boots = joint_delta_g(ref, {"flat": flat}, n_boot=100, metric="slope")
+    a_point, _ = joint_delta_g(ref, {"flat": flat}, n_boot=10, metric="auroc")
+    assert a_point["flat"] == pytest.approx(0)                       # AUROC cannot see it
+    assert point["flat"] < 0 and boots[:, 0].max() < 0               # slope rises (underconfident) -> negative drop

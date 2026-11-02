@@ -88,3 +88,18 @@ def test_worker_augmentation_differs_between_epochs(frozen):
     order = lambda b: b["images"][torch.argsort(b["index"])]
     e1, e2 = order(next(iter(dl))), order(next(iter(dl)))
     assert not torch.equal(e1, e2)          # new random flips/rotations each epoch
+
+
+def test_shift_is_applied_before_normalising(frozen):
+    t = fold_table(frozen, holdout=0)
+    plain = TileDataset(frozen, t)[0]["images"]
+    shifted = TileDataset(frozen, t, shift=("blur", 2.0, 0))[0]["images"]
+    again = TileDataset(frozen, t, shift=("blur", 2.0, 0))[0]["images"]
+    assert not torch.equal(plain, shifted) and torch.equal(shifted, again)
+
+
+def test_custom_table_roles(frozen):
+    t = fold_table(frozen, holdout=0)
+    t = t.assign(role=np.where(t.patient_id.str[-1].isin(["0", "1"]), "train", "pilot"))
+    loaders, table = make_loaders(frozen, holdout=0, seed=1, batch_size=4, num_workers=0, table=t)
+    assert set(loaders) == {"train", "pilot"} and len(loaders["pilot"].dataset) == (t.role == "pilot").sum()

@@ -1,7 +1,7 @@
 {
   "dataset": "CAMELYON17",
   "freeze_master_sha256": "1a98ed802608ec72837a1766d9bdc44a58a632cb980a7b608763db921d192381",
-  "created": "2026-10-30",
+  "created": "2026-11-02",
   "matching_measure": "mean per-pixel CIELAB \u0394E76 between tile and shifted tile (DR-015)",
   "calibration_sample": {
     "rule": "training-split patients; 10 tiles per (centre, label); seed 0",
@@ -117,35 +117,40 @@
         "strength": 0.6674,
         "achieved_delta_e": 2.03,
         "achieved_ssim": 0.9675,
-        "reached": true
+        "reached": true,
+        "grid": "common"
       },
       {
         "target_delta_e": 4.0,
         "strength": 1.1844,
         "achieved_delta_e": 4.011,
         "achieved_ssim": 0.867,
-        "reached": true
+        "reached": true,
+        "grid": "common"
       },
       {
         "target_delta_e": 6.0,
         "strength": 1.8755,
         "achieved_delta_e": 6.023,
         "achieved_ssim": 0.7142,
-        "reached": true
+        "reached": true,
+        "grid": "common"
       },
       {
         "target_delta_e": 8.0,
         "strength": 2.7992,
         "achieved_delta_e": 8.002,
         "achieved_ssim": 0.5476,
-        "reached": true
+        "reached": true,
+        "grid": "common"
       },
       {
         "target_delta_e": 10.0,
         "strength": 4.196,
         "achieved_delta_e": 10.004,
         "achieved_ssim": 0.384,
-        "reached": true
+        "reached": true,
+        "grid": "common"
       }
     ],
     "striping": [
@@ -154,35 +159,72 @@
         "strength": 0.0639,
         "achieved_delta_e": 2.001,
         "achieved_ssim": 0.9788,
-        "reached": true
+        "reached": true,
+        "grid": "common"
       },
       {
         "target_delta_e": 4.0,
         "strength": 0.1271,
         "achieved_delta_e": 4.0,
         "achieved_ssim": 0.9373,
-        "reached": true
+        "reached": true,
+        "grid": "common"
       },
       {
         "target_delta_e": 6.0,
         "strength": 0.1895,
         "achieved_delta_e": 6.0,
         "achieved_ssim": 0.8917,
-        "reached": true
+        "reached": true,
+        "grid": "common"
       },
       {
         "target_delta_e": 8.0,
         "strength": 0.2512,
         "achieved_delta_e": 8.001,
         "achieved_ssim": 0.8459,
-        "reached": true
+        "reached": true,
+        "grid": "common"
       },
       {
         "target_delta_e": 10.0,
         "strength": 0.3116,
         "achieved_delta_e": 10.001,
         "achieved_ssim": 0.801,
-        "reached": true
+        "reached": true,
+        "grid": "common"
+      },
+      {
+        "target_delta_e": 15.0,
+        "strength": 0.4586,
+        "achieved_delta_e": 15.0,
+        "achieved_ssim": 0.6904,
+        "reached": true,
+        "grid": "extended (pilot, DR-020)"
+      },
+      {
+        "target_delta_e": 20.0,
+        "strength": 0.5984,
+        "achieved_delta_e": 20.001,
+        "achieved_ssim": 0.5832,
+        "reached": true,
+        "grid": "extended (pilot, DR-020)"
+      },
+      {
+        "target_delta_e": 25.0,
+        "strength": 0.7291,
+        "achieved_delta_e": 25.001,
+        "achieved_ssim": 0.4871,
+        "reached": true,
+        "grid": "extended (pilot, DR-020)"
+      },
+      {
+        "target_delta_e": 30.0,
+        "strength": 0.8493,
+        "achieved_delta_e": 30.001,
+        "achieved_ssim": 0.4132,
+        "reached": true,
+        "grid": "extended (pilot, DR-020)"
       }
     ],
     "clipped": [
@@ -191,35 +233,72 @@
         "strength": 0.041,
         "achieved_delta_e": 2.107,
         "achieved_ssim": 0.9663,
-        "reached": true
+        "reached": true,
+        "grid": "common"
       },
       {
         "target_delta_e": 4.0,
         "strength": 0.0801,
         "achieved_delta_e": 4.026,
         "achieved_ssim": 0.9334,
-        "reached": true
+        "reached": true,
+        "grid": "common"
       },
       {
         "target_delta_e": 6.0,
         "strength": 0.123,
         "achieved_delta_e": 6.135,
         "achieved_ssim": 0.8974,
-        "reached": true
+        "reached": true,
+        "grid": "common"
       },
       {
         "target_delta_e": 8.0,
         "strength": 0.1621,
         "achieved_delta_e": 8.029,
         "achieved_ssim": 0.8647,
-        "reached": true
+        "reached": true,
+        "grid": "common"
       },
       {
         "target_delta_e": 10.0,
         "strength": 0.2051,
         "achieved_delta_e": 10.115,
         "achieved_ssim": 0.8286,
-        "reached": true
+        "reached": true,
+        "grid": "common"
+      },
+      {
+        "target_delta_e": 15.0,
+        "strength": 0.3066,
+        "achieved_delta_e": 15.095,
+        "achieved_ssim": 0.7435,
+        "reached": true,
+        "grid": "extended (pilot, DR-020)"
+      },
+      {
+        "target_delta_e": 20.0,
+        "strength": 0.4082,
+        "achieved_delta_e": 20.046,
+        "achieved_ssim": 0.6591,
+        "reached": true,
+        "grid": "extended (pilot, DR-020)"
+      },
+      {
+        "target_delta_e": 30.0,
+        "strength": 0.6152,
+        "achieved_delta_e": 30.107,
+        "achieved_ssim": 0.4875,
+        "reached": true,
+        "grid": "extended (pilot, DR-020)"
+      },
+      {
+        "target_delta_e": 40.0,
+        "strength": 0.8223,
+        "achieved_delta_e": 40.073,
+        "achieved_ssim": 0.3173,
+        "reached": true,
+        "grid": "extended (pilot, DR-020)"
       }
     ],
     "jpeg": [
@@ -228,35 +307,56 @@
         "strength": 1.0,
         "achieved_delta_e": 1.965,
         "achieved_ssim": 0.9906,
-        "reached": true
+        "reached": true,
+        "grid": "common"
       },
       {
         "target_delta_e": 4.0,
         "strength": 23.0,
         "achieved_delta_e": 3.986,
         "achieved_ssim": 0.9617,
-        "reached": true
+        "reached": true,
+        "grid": "common"
       },
       {
         "target_delta_e": 6.0,
         "strength": 73.0,
         "achieved_delta_e": 5.984,
         "achieved_ssim": 0.8991,
-        "reached": true
+        "reached": true,
+        "grid": "common"
       },
       {
         "target_delta_e": 8.0,
         "strength": 88.0,
         "achieved_delta_e": 7.9,
         "achieved_ssim": 0.8313,
-        "reached": true
+        "reached": true,
+        "grid": "common"
       },
       {
         "target_delta_e": 10.0,
         "strength": 93.0,
         "achieved_delta_e": 9.769,
         "achieved_ssim": 0.7579,
-        "reached": true
+        "reached": true,
+        "grid": "common"
+      },
+      {
+        "target_delta_e": 12.0,
+        "strength": 95.0,
+        "achieved_delta_e": 12.509,
+        "achieved_ssim": 0.6953,
+        "reached": false,
+        "grid": "extended (pilot, DR-020)"
+      },
+      {
+        "target_delta_e": 15.0,
+        "strength": 96.0,
+        "achieved_delta_e": 14.847,
+        "achieved_ssim": 0.6456,
+        "reached": true,
+        "grid": "extended (pilot, DR-020)"
       }
     ],
     "stain": [
@@ -265,35 +365,48 @@
         "strength": 0.1465,
         "achieved_delta_e": 2.0,
         "achieved_ssim": 0.9969,
-        "reached": true
+        "reached": true,
+        "grid": "common"
       },
       {
         "target_delta_e": 4.0,
         "strength": 0.3102,
         "achieved_delta_e": 4.0,
         "achieved_ssim": 0.9928,
-        "reached": true
+        "reached": true,
+        "grid": "common"
       },
       {
         "target_delta_e": 6.0,
         "strength": 0.4704,
         "achieved_delta_e": 6.0,
         "achieved_ssim": 0.9858,
-        "reached": true
+        "reached": true,
+        "grid": "common"
       },
       {
         "target_delta_e": 8.0,
         "strength": 0.6276,
         "achieved_delta_e": 8.0,
         "achieved_ssim": 0.9759,
-        "reached": true
+        "reached": true,
+        "grid": "common"
       },
       {
         "target_delta_e": 10.0,
         "strength": 0.7815,
         "achieved_delta_e": 10.0,
         "achieved_ssim": 0.9629,
-        "reached": true
+        "reached": true,
+        "grid": "common"
+      },
+      {
+        "target_delta_e": 12.0,
+        "strength": 0.9317,
+        "achieved_delta_e": 12.0,
+        "achieved_ssim": 0.9466,
+        "reached": true,
+        "grid": "extended (pilot, DR-020)"
       }
     ]
   }

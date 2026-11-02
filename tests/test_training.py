@@ -147,3 +147,27 @@ def test_loaders_give_domain_only_for_training_tiles(frozen):
     batch = next(iter(loaders["train"]))
     assert set(batch["domain"].tolist()) <= {0, 1}
     assert "domain" not in next(iter(loaders["test_cross"]))
+
+
+def test_pilot_table_run_needs_no_plan_and_scores_shifts(frozen, tmp_path):
+    from stain_benchmark.data.dataset import fold_table
+    from stain_benchmark.training.run import score_tiles
+    t = fold_table(frozen, holdout=0)
+    t = t.assign(role=np.where(t.patient_id.str[-1].isin(["0", "1"]), "train", "pilot"))
+    s = train_run(frozen, holdout="pilot", seed=1, run_dir=tmp_path / "p", schedule=TINY, num_workers=0,
+                  device="cpu", pretrained=False, progress=False, roles=("pilot",), table=t)
+    assert s["roles_scored"] == ["pilot"]
+    model = build_model(pretrained=False)
+    model.load_state_dict(torch.load(tmp_path / "p" / "model.pt"))
+    pilot = t[t.role == "pilot"]
+    a = score_tiles(model, frozen, pilot, torch.device("cpu"), num_workers=0)
+    b = score_tiles(model, frozen, pilot, torch.device("cpu"), shift=("blur", 3.0, 0), num_workers=0)
+    # the tiny untrained model saturates probabilities, so compare logits
+    assert len(a) == len(b) == len(pilot) and not np.allclose(a.logit_1, b.logit_1)
+
+
+def test_custom_table_with_test_role_still_locked(frozen, tmp_path):
+    from stain_benchmark.data.dataset import fold_table
+    with pytest.raises(PreRegistrationError):
+        train_run(frozen, 0, 1, tmp_path / "q", schedule=TINY, num_workers=0, device="cpu", pretrained=False,
+                  progress=False, table=fold_table(frozen, holdout=0))

@@ -134,6 +134,17 @@ def _git_state(repo: Path) -> tuple[str, bool]:
         return "unknown", True
 
 
+def score_tiles(model: ResNet50Classifier, tiles_dir: str | Path, table: pd.DataFrame, device: torch.device,
+                normalizer=None, shift: tuple[str, float, int] | None = None, num_workers: int = 8) -> pd.DataFrame:
+    """Predictions for the rows of ``table``, optionally with a synthetic ``shift`` applied on read."""
+    loader = DataLoader(TileDataset(tiles_dir, table.reset_index(drop=True), normalizer=normalizer, shift=shift),
+                        batch_size=128, shuffle=False, num_workers=num_workers, pin_memory=device.type == "cuda")
+    logits, _ = predict(model, loader, device)
+    p = torch.softmax(torch.from_numpy(logits), dim=1)[:, 1].numpy()
+    return table.reset_index(drop=True)[["tile_id", "patient_id", "slide_id", "center", "label"]].assign(
+        logit_0=logits[:, 0], logit_1=logits[:, 1], p_tumour=p)
+
+
 @torch.no_grad()
 def predict(model: ResNet50Classifier, loader: DataLoader, device: torch.device) -> tuple[np.ndarray, np.ndarray]:
     """Logits (n, 2) and penultimate features (n, 2048) for every tile, in loader order."""
@@ -159,11 +170,14 @@ def _role_metrics(pred: pd.DataFrame) -> dict:
 def train_run(tiles_dir: str | Path, holdout: str | int, seed: int, run_dir: str | Path,
               condition: str = "E1", schedule: Schedule = WILDS, num_workers: int = 8,
               device: str | None = None, pretrained: bool = True, verify: bool = True,
-              progress: bool = True, roles: tuple[str, ...] = ROLES, require_plan: bool = True) -> dict:
+              progress: bool = True, roles: tuple[str, ...] = ROLES, require_plan: bool = True,
+              table: pd.DataFrame | None = None) -> dict:
     """Train and evaluate one (condition, fold, seed); return the summary written to summary.json.
 
     ``roles`` are the tile sets scored after training. Scoring a test role requires the committed
     analysis plan (``require_plan``; switched off only in unit tests on synthetic data).
+    ``table`` (manifest rows with a ``role`` column, roles ``train`` + others) replaces the fold,
+    e.g. the dose-range pilot (DR-020), whose held-out role is ``pilot`` — not a test role.
     """
     if condition not in CONDITIONS:
         raise ValueError(f"condition {condition!r} not implemented; available: {CONDITIONS}")
@@ -181,13 +195,16 @@ def train_run(tiles_dir: str | Path, holdout: str | int, seed: int, run_dir: str
 
     if verify:
         verify_freeze(tiles_dir)               # before any tile is read
-    normalizer, ref = fit_reference(condition, tiles_dir, fold_table(tiles_dir, holdout))
+    if table is not None and "test_in" in set(table["role"]) | set(roles) and require_plan:
+        require_committed_plan()
+    fold = table if table is not None else fold_table(tiles_dir, holdout)
+    normalizer, ref = fit_reference(condition, tiles_dir, fold)
     if normalizer is not None:
         ref[["tile_id", "patient_id", "center", "label"]].to_csv(run_dir / "reference_tiles.csv", index=False)
         normalizer.save(run_dir / "normalizer.npz")
     norm_fn = normalizer.transform if normalizer is not None else None
     loaders, table = make_loaders(tiles_dir, holdout, seed, batch_size=schedule.batch_size,
-                                  num_workers=num_workers, normalizer=norm_fn, verify=False)
+                                  num_workers=num_workers, normalizer=norm_fn, verify=False, table=table)
     model = build_model(pretrained).to(dev)
     params = list(model.parameters())
     dann = condition == "E5"

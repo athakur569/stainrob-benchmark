@@ -21,7 +21,11 @@ from tqdm import tqdm
 
 from stain_benchmark.data.shifts import FAMILIES, calibrate_strength, mean_measure
 
-TARGETS_DELTA_E = [2.0, 4.0, 6.0, 8.0, 10.0]
+TARGETS_DELTA_E = [2.0, 4.0, 6.0, 8.0, 10.0]          # common grid: every family, for matched comparisons
+# Extensions after the dose-range pilot (DR-020): families with no clear, large response at ΔE 10
+# get higher doses, up to what each family can reach (striping ~32, clipped ~44, JPEG ~17, stain ~12).
+EXTENDED_DELTA_E = {"striping": [15.0, 20.0, 25.0, 30.0], "clipped": [15.0, 20.0, 30.0, 40.0],
+                    "jpeg": [12.0, 15.0], "stain": [12.0]}
 PER_CELL = 10          # tiles per (centre, label) in the calibration sample
 SEED = 0
 
@@ -53,13 +57,14 @@ def main() -> None:
     doses = {}
     for fam in tqdm(FAMILIES, desc="families"):
         doses[fam] = []
-        for target in TARGETS_DELTA_E:
+        for target in TARGETS_DELTA_E + EXTENDED_DELTA_E.get(fam, []):
             s, achieved = calibrate_strength(imgs, fam, target, measure="delta_e", seed=SEED, keys=keys)
             doses[fam].append({
                 "target_delta_e": target, "strength": round(s, 4),
                 "achieved_delta_e": round(achieved, 3),
                 "achieved_ssim": round(mean_measure(imgs, fam, s, "ssim", SEED, keys), 4),
                 "reached": bool(abs(achieved - target) <= 0.25),
+                "grid": "common" if target in TARGETS_DELTA_E else "extended (pilot, DR-020)",
             })
             print(f"{fam:9s} ΔE {target:4.1f} → strength {s:7.3f} (ΔE {achieved:5.2f}, "
                   f"SSIM {doses[fam][-1]['achieved_ssim']:.3f})", flush=True)

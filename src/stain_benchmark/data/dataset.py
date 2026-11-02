@@ -24,6 +24,7 @@ from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 
 from stain_benchmark.data.freeze import verify_freeze
+from stain_benchmark.data.shifts import apply_shift
 from stain_benchmark.data.splitting import loco_fold
 from stain_benchmark.utils.reproducibility import WorkerInitFn, get_generator
 
@@ -60,14 +61,19 @@ class TileDataset(Dataset):
     Each item is a dict: ``images`` (3, H, W) float, ``labels`` (0 normal / 1 tumour),
     ``index`` (the row's position in ``table``, so per-tile outputs can be joined back) and,
     if ``domains`` is given, ``domain`` (the tile's training-centre index, used by E5).
+    ``shift`` = (family, strength, seed) applies a synthetic shift to each tile as it is read,
+    before any normaliser — as a shifted slide would arrive at deployment.
     ``normalizer`` maps a uint8 RGB array to a uint8 RGB array (E2/E3 stain normalisation).
     """
 
     def __init__(self, out_dir: str | Path, table: pd.DataFrame,
                  normalizer: Callable[[np.ndarray], np.ndarray] | None = None,
-                 augment: bool = False, domains: np.ndarray | None = None):
+                 augment: bool = False, domains: np.ndarray | None = None,
+                 shift: tuple[str, float, int] | None = None):
         self.out_dir = Path(out_dir)
         self.paths = table["path"].tolist()
+        self.tile_ids = table["tile_id"].astype(str).tolist()
+        self.shift = shift
         self.labels = table["label"].astype(int).to_numpy()
         self.normalizer = normalizer
         self.augment = augment
@@ -78,6 +84,9 @@ class TileDataset(Dataset):
 
     def __getitem__(self, i: int) -> dict:
         rgb = np.array(Image.open(self.out_dir / self.paths[i]).convert("RGB"))
+        if self.shift is not None:
+            family, strength, seed = self.shift
+            rgb = apply_shift(rgb, family, strength, seed, self.tile_ids[i])
         if self.normalizer is not None:
             rgb = self.normalizer(rgb)
         x = torch.from_numpy(np.ascontiguousarray(rgb)).permute(2, 0, 1).float().div_(255)
@@ -92,18 +101,23 @@ class TileDataset(Dataset):
 
 def make_loaders(out_dir: str | Path, holdout: str | int, seed: int, batch_size: int = 64,
                  num_workers: int = 8, normalizer: Callable[[np.ndarray], np.ndarray] | None = None,
-                 verify: bool = True, merge_val: bool = True) -> tuple[dict[str, DataLoader], pd.DataFrame]:
+                 verify: bool = True, merge_val: bool = True,
+                 table: pd.DataFrame | None = None) -> tuple[dict[str, DataLoader], pd.DataFrame]:
     """Verify the freeze, then build one loader per role for the fold holding out ``holdout``.
 
     Returns the loaders and the fold table; each table row's ``role`` says which loader holds it,
     and a batch's ``index`` is the row position within that role's subset (``table[table.role == r]``).
     Only ``train`` is shuffled and augmented; shuffling uses a generator seeded from ``seed``.
+    ``table`` (rows of the manifest with a ``role`` column) replaces the fold table, e.g. for the
+    dose-range pilot inside the training split; loaders are then built for its roles.
     """
     if verify:
         verify_freeze(out_dir)
-    table = fold_table(out_dir, holdout, merge_val=merge_val)
+    if table is None:
+        table = fold_table(out_dir, holdout, merge_val=merge_val)
+    roles = ROLES if set(table["role"]) <= set(ROLES) else tuple(sorted(set(table["role"])))
     loaders = {}
-    for role in ROLES:
+    for role in roles:
         sub = table[table["role"] == role].reset_index(drop=True)
         train = role == "train"
         domains = None

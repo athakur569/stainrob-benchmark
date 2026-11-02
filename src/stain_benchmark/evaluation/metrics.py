@@ -340,6 +340,7 @@ def compute_calibration_slope(
     y_true: np.ndarray,
     y_prob: np.ndarray,
     eps: float = 1e-6,
+    sample_weight: np.ndarray | None = None,
 ) -> Tuple[float, float]:
     """
     Calibration slope and intercept: logistic regression of the outcome on logit(p).
@@ -353,6 +354,7 @@ def compute_calibration_slope(
         y_true: Ground truth labels (0 or 1).
         y_prob: Predicted probabilities for the positive class.
         eps: Probabilities are clipped to [eps, 1 - eps] before the logit.
+        sample_weight: Optional per-sample weights (e.g. patient-bootstrap multiplicities).
 
     Returns:
         (slope, intercept).
@@ -364,7 +366,7 @@ def compute_calibration_slope(
     if len(np.unique(y_true)) < 2:
         raise ValueError("calibration slope needs both classes present")
     lp = np.log(p / (1 - p)).reshape(-1, 1)
-    fit = LogisticRegression(penalty=None, solver="lbfgs", max_iter=1000).fit(lp, y_true)
+    fit = LogisticRegression(penalty=None, solver="lbfgs", max_iter=1000).fit(lp, y_true, sample_weight=sample_weight)
     return float(fit.coef_[0, 0]), float(fit.intercept_[0])
 
 

@@ -58,7 +58,7 @@ def weighted_auroc(y: np.ndarray, p: np.ndarray, w: np.ndarray) -> float:
 
 def weighted_slope(y: np.ndarray, p: np.ndarray, w: np.ndarray) -> float:
     m = w > 0
-    return compute_calibration_slope(np.repeat(y[m], w[m].astype(int)), np.repeat(p[m], w[m].astype(int)))[0]
+    return compute_calibration_slope(y[m], p[m], sample_weight=w[m])[0]
 
 
 @dataclass
@@ -102,10 +102,11 @@ def delta_g_interval(pred_in: pd.DataFrame, pred_cross: pd.DataFrame, n_boot: in
 
 
 def joint_delta_g(reference: pd.DataFrame, shifted: dict[str, pd.DataFrame], n_boot: int = 2000,
-                  seed: int = 0) -> tuple[pd.Series, np.ndarray]:
+                  seed: int = 0, metric: str = "auroc") -> tuple[pd.Series, np.ndarray]:
     """Paired ΔG for conditions that share the reference's tiles (synthetic shifts of test_in).
 
-    ΔG(c) = AUROC(reference) − AUROC(shifted c). One set of patient draws is used for the
+    ΔG(c) = metric(reference) − metric(shifted c), metric "auroc" or "slope" (calibration slope).
+    One set of patient draws is used for the
     reference and every condition, so the pairing and the dependence between conditions are
     kept. Returns the point estimates (Series over conditions) and the (n_boot, n_conditions)
     bootstrap matrix.
@@ -114,15 +115,15 @@ def joint_delta_g(reference: pd.DataFrame, shifted: dict[str, pd.DataFrame], n_b
     for c in names:
         if not np.array_equal(shifted[c]["tile_id"].to_numpy(), reference["tile_id"].to_numpy()):
             raise ValueError(f"condition {c!r} does not have the reference's tiles in the same order")
+    fn = weighted_auroc if metric == "auroc" else weighted_slope
     y, p0 = reference["label"].to_numpy(), reference["p_tumour"].to_numpy()
     W = patient_weights(reference["patient_id"].to_numpy(), tumour_patient_set(reference), n_boot, seed)
     ones = np.ones(len(y))
-    point = pd.Series({c: weighted_auroc(y, p0, ones) - weighted_auroc(y, shifted[c]["p_tumour"].to_numpy(), ones)
-                       for c in names})
+    point = pd.Series({c: fn(y, p0, ones) - fn(y, shifted[c]["p_tumour"].to_numpy(), ones) for c in names})
     boots = np.empty((n_boot, len(names)))
     for b, w in enumerate(W):
-        base = weighted_auroc(y, p0, w)
-        boots[b] = [base - weighted_auroc(y, shifted[c]["p_tumour"].to_numpy(), w) for c in names]
+        base = fn(y, p0, w)
+        boots[b] = [base - fn(y, shifted[c]["p_tumour"].to_numpy(), w) for c in names]
     return point, boots
 
 
