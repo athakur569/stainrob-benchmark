@@ -52,6 +52,11 @@ training tiles, disjoint from `test_in` and `test_cross`. Principle behind P1b a
 only if every quantity in its statistic is unchanged by permuting the batch labels; a projection fitted on one batch
 is not. The arm that holds α is chosen by power under shift in P3, not by false-alarm rate alone.
 
+**P1d — added before running (raised by career-ops):** P1c's thirds give each side about a third of the patients, P1/P1b
+halves. For a matched contrast, the reference-fitted and pooled arms are rerun on the **same** thirds as P1c (`--thirds`;
+the projection third unused), so the three arms differ only in where the projection is fitted. Headline rates stay
+those of P1/P1b (halves); P1d is for the contrast.
+
 ## P2 · Consistent-direction stain family
 
 The pre-registered stain family draws a direction per tile, so a batch's changes cancel (ISS-044). `stain_batch`

@@ -12,7 +12,8 @@ splits the training PATIENTS in half instead and runs each tier twice on the sam
 ``--fit-on pooled`` fits the standardisation and principal components on both halves together instead of
 the reference half only (ISS-049). ``--fit-on external`` splits the training patients into thirds instead:
 one third fits the projection, the other two are reference and deployment (still training tiles only).
-Output columns are the same.
+``--thirds`` uses that same three-way split for every arm (the first third unused unless external), so arms can be
+compared on identical reference and deployment patients. Output columns are the same.
 
 Training tiles only: no test data is read. Not part of the pre-registered analysis; reported as a
 labelled post-hoc diagnostic.
@@ -44,7 +45,7 @@ def load_tier1(base: Path, enc: str):
 
 
 def job(args) -> dict:
-    fold, tier, tiles_dir, runs, tier1_dir, n_splits, fit_on = args
+    fold, tier, tiles_dir, runs, tier1_dir, n_splits, fit_on, thirds = args
     if tier == "tier2":
         p = pd.read_csv(runs / "E1" / f"fold{fold}" / "seed42" / "predictions_train.csv")
         X = np.load(runs / "E1" / f"fold{fold}" / "seed42" / "features_train.npy").astype(np.float64)
@@ -66,10 +67,11 @@ def job(args) -> dict:
         rng = np.random.default_rng([int(fold), i])           # same splits for every tier and cluster type
         order = rng.permutation(upat)
         ext = None
-        if fit_on == "external":                              # thirds: projection / reference / deployment
+        if thirds or fit_on == "external":                    # thirds: projection / reference / deployment
             k = len(upat) // 3
             fit_rows = np.isin(patients, order[:k])
-            ext, keep, m = X[fit_rows], ~fit_rows, np.isin(patients, order[k:2 * k])
+            keep, m = ~fit_rows, np.isin(patients, order[k:2 * k])
+            ext = X[fit_rows] if fit_on == "external" else None
         else:
             keep = np.ones(len(patients), bool)
             m = np.isin(patients, order[: len(upat) // 2])
@@ -79,7 +81,8 @@ def job(args) -> dict:
             else:
                 flags[kind] += tier1(X[m], X[~m & keep], ids[m], ids[~m & keep], ncomp, n_permutations=99,
                                      seed=i, fit_on=fit_on, external=ext)["flagged"]
-    return {"fold": fold, "tier": tier, "fit_on": fit_on, "patients": len(upat), "splits": n_splits, "nominal_alpha": ALPHA,
+    return {"fold": fold, "tier": tier, "fit_on": fit_on, "split": "thirds" if thirds or fit_on == "external" else "halves",
+            "patients": len(upat), "splits": n_splits, "nominal_alpha": ALPHA,
             "false_alarm_slide_clusters": flags["slide"] / n_splits,
             "false_alarm_patient_clusters": flags["patient"] / n_splits}
 
@@ -94,10 +97,11 @@ def main() -> None:
     ap.add_argument("--jobs", type=int, default=10)
     ap.add_argument("--fit-on", default="reference", choices=("reference", "pooled", "external"))
     ap.add_argument("--tiers", default=",".join(TIERS))
+    ap.add_argument("--thirds", action="store_true", help="same projection/reference/deployment thirds for every arm")
     args = ap.parse_args()
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
-    jobs = [(f, t, Path(args.tiles), Path(args.runs), Path(args.tier1), args.splits, args.fit_on)
+    jobs = [(f, t, Path(args.tiles), Path(args.runs), Path(args.tier1), args.splits, args.fit_on, args.thirds)
             for f in FOLDS for t in args.tiers.split(",")]
     rows = []
     with ProcessPoolExecutor(args.jobs) as ex:
