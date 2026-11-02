@@ -11,7 +11,10 @@ the expected-harmless control:
     clipped      missing/clipped tissue: a `strength` fraction of the tile blanked to glass
     jpeg         compression: JPEG quality = 100 - strength
     stain        stain intensity/colour: haematoxylin and eosin amounts scaled by
-                 1 ± strength (random direction per tile), in HED space        harmless control
+                 1 ± strength (random direction PER TILE), in HED space — pre-registered;
+                 across a batch the directions cancel, so it is closer to stain noise (ISS-044)
+    stain_batch  consistent over-staining: haematoxylin and eosin both scaled by 1 + strength
+                 for every tile — how a laboratory batch drifts (post hoc, ISS-044)
 
 Doses are matched ACROSS families by how much the image changes, not by any monitor statistic
 (matching on a Tier 1 statistic would make the harmful-versus-harmless test circular). The
@@ -34,7 +37,8 @@ import numpy as np
 from skimage.color import hed2rgb, rgb2hed, rgb2lab
 from skimage.metrics import structural_similarity
 
-FAMILIES = ("blur", "striping", "clipped", "jpeg", "stain")
+FAMILIES = ("blur", "striping", "clipped", "jpeg", "stain")      # pre-registered dose table
+EXTRA_FAMILIES = ("stain_batch",)                                 # post hoc (ISS-044)
 GLASS = 240                 # RGB value used for blanked (missing) tissue, close to slide background
 STRIPE_PX = 16              # band height for striping
 
@@ -46,8 +50,8 @@ def _rng(seed: int, key: str) -> np.random.Generator:
 def apply_shift(img: np.ndarray, family: str, strength: float, seed: int = 0, key: str = "") -> np.ndarray:
     """Return a shifted copy of an RGB uint8 tile. ``key`` (e.g. the tile id) makes per-tile
     random choices (stripe phase, clipped edge, stain direction) reproducible."""
-    if family not in FAMILIES:
-        raise ValueError(f"unknown shift family {family!r}; choose from {FAMILIES}")
+    if family not in FAMILIES + EXTRA_FAMILIES:
+        raise ValueError(f"unknown shift family {family!r}; choose from {FAMILIES + EXTRA_FAMILIES}")
     if img.dtype != np.uint8 or img.ndim != 3 or img.shape[2] != 3:
         raise ValueError("expected an RGB uint8 image (H, W, 3)")
     if strength <= 0:
@@ -87,8 +91,9 @@ def apply_shift(img: np.ndarray, family: str, strength: float, seed: int = 0, ke
             raise RuntimeError("JPEG encoding failed")
         return cv2.cvtColor(cv2.imdecode(buf, cv2.IMREAD_COLOR), cv2.COLOR_BGR2RGB)
 
-    # stain: scale haematoxylin and eosin amounts, each by 1 + strength * u, u in [-1, 1]
-    u = rng.uniform(-1.0, 1.0, size=2)
+    # stain: scale haematoxylin and eosin amounts, each by 1 + strength * u, u in [-1, 1] per tile;
+    # stain_batch: the same direction for every tile (u = (1, 1), over-staining)
+    u = np.ones(2) if family == "stain_batch" else rng.uniform(-1.0, 1.0, size=2)
     hed = rgb2hed(img)
     hed[..., 0] *= max(1.0 + strength * u[0], 0.0)
     hed[..., 1] *= max(1.0 + strength * u[1], 0.0)
@@ -124,7 +129,7 @@ def mean_ssim(tiles: list[np.ndarray], family: str, strength: float, seed: int =
 
 # Search ranges per family (strength units as above). Upper ends are physical limits.
 STRENGTH_RANGE = {"blur": (0.0, 12.0), "striping": (0.0, 0.9), "clipped": (0.0, 0.9),
-                  "jpeg": (0.0, 99.0), "stain": (0.0, 0.95)}
+                  "jpeg": (0.0, 99.0), "stain": (0.0, 0.95), "stain_batch": (0.0, 3.0)}
 
 
 def calibrate_strength(tiles: list[np.ndarray], family: str, target: float, measure: str = "delta_e",

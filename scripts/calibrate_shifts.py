@@ -19,7 +19,7 @@ import pandas as pd
 from PIL import Image
 from tqdm import tqdm
 
-from stain_benchmark.data.shifts import FAMILIES, calibrate_strength, mean_measure
+from stain_benchmark.data.shifts import EXTRA_FAMILIES, FAMILIES, calibrate_strength, mean_measure
 
 TARGETS_DELTA_E = [2.0, 4.0, 6.0, 8.0, 10.0]          # common grid: every family, for matched comparisons
 # Extensions after the dose-range pilot (DR-020): families with no clear, large response at ΔE 10
@@ -44,6 +44,9 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--tiles", required=True)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--families", default=",".join(FAMILIES),
+                    help=f"families to calibrate (post-hoc extra: {', '.join(EXTRA_FAMILIES)})")
+    ap.add_argument("--targets", default=None, help="comma-separated ΔE targets (default: common grid + extensions)")
     args = ap.parse_args()
     tiles_dir, out = Path(args.tiles), Path(args.out)
     if out.exists():
@@ -55,9 +58,12 @@ def main() -> None:
     freeze = json.loads((tiles_dir / "freeze.json").read_text())
 
     doses = {}
-    for fam in tqdm(FAMILIES, desc="families"):
+    families = args.families.split(",")
+    for fam in tqdm(families, desc="families"):
         doses[fam] = []
-        for target in TARGETS_DELTA_E + EXTENDED_DELTA_E.get(fam, []):
+        targets = ([float(x) for x in args.targets.split(",")] if args.targets
+                   else TARGETS_DELTA_E + EXTENDED_DELTA_E.get(fam, []))
+        for target in targets:
             s, achieved = calibrate_strength(imgs, fam, target, measure="delta_e", seed=SEED, keys=keys)
             doses[fam].append({
                 "target_delta_e": target, "strength": round(s, 4),

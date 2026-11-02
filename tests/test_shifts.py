@@ -119,3 +119,13 @@ def test_jpeg_calibration_picks_the_closer_integer_quality():
     assert s == int(s)
     for neighbour in (s - 1, s + 1):
         assert abs(achieved - 6.0) <= abs(mean_measure(tiles, "jpeg", neighbour) - 6.0) + 1e-9
+
+
+def test_stain_batch_shifts_every_tile_the_same_way():
+    from skimage.color import rgb2hed
+    tiles = [he_like(s) for s in range(6)]
+    h_before = [rgb2hed(t)[..., 0].mean() for t in tiles]
+    h_after = [rgb2hed(apply_shift(t, "stain_batch", 0.5, key=str(i)))[..., 0].mean() for i, t in enumerate(tiles)]
+    assert all(a > b for a, b in zip(h_after, h_before))          # every tile more haematoxylin
+    per_tile = [rgb2hed(apply_shift(t, "stain", 0.5, key=str(i)))[..., 0].mean() for i, t in enumerate(tiles)]
+    assert not all(a > b for a, b in zip(per_tile, h_before))     # the per-tile family goes both ways

@@ -32,6 +32,7 @@ def main() -> None:
     ap.add_argument("--doses", default="configs/shift_doses_camelyon17.json")
     ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--only", default=None, help="restrict to runs whose path contains this text")
+    ap.add_argument("--tag", default="", help="output subfolder suffix, e.g. for a post-hoc dose table")
     args = ap.parse_args()
     plan = require_committed_plan()
     tiles_dir, runs = Path(args.tiles), Path(args.runs)
@@ -41,10 +42,11 @@ def main() -> None:
     run_dirs = sorted(p.parent for p in runs.glob("*/fold*/seed*/summary.json"))
     if args.only:
         run_dirs = [r for r in run_dirs if args.only in str(r)]
-    for run in run_dirs:
-        out = run / "synthetic"
-        if (out / "done.json").exists():
-            continue
+    sub = "synthetic" + (f"_{args.tag}" if args.tag else "")
+    todo = [r for r in run_dirs if not (r / sub / "done.json").exists()]
+    print(f"{len(run_dirs) - len(todo)} of {len(run_dirs)} runs already scored; {len(todo)} to go", flush=True)
+    for i, run in enumerate(todo, 1):
+        out = run / sub
         s = json.loads((run / "summary.json").read_text())
         cond, holdout = s["condition"], s["holdout"]
         table = fold_table(tiles_dir, holdout)
@@ -58,7 +60,7 @@ def main() -> None:
         model.load_state_dict(torch.load(run / "model.pt", map_location=dev))
         test_in = table[table["role"] == "test_in"].reset_index(drop=True)
         out.mkdir(exist_ok=True)
-        jobs = [("unshifted", None)] + [(f"{fam}_{k}", (fam, d["strength"], doses["shift_seed"]))
+        jobs = ([] if args.tag else [("unshifted", None)]) + [(f"{fam}_{k}", (fam, d["strength"], doses["shift_seed"]))
                                         for fam, levels in doses["doses"].items() for k, d in enumerate(levels)]
         for name, shift in jobs:
             pred, feats = score_tiles(model, tiles_dir, test_in, dev, normalizer=norm_fn, shift=shift,
@@ -67,7 +69,7 @@ def main() -> None:
             np.save(out / f"features_{name}.npy", feats)
         (out / "done.json").write_text(json.dumps({"analysis_plan_commit": plan, "n_tiles": len(test_in),
                                                    "conditions": [j[0] for j in jobs], "doses": args.doses}, indent=2))
-        print(f"{run.relative_to(runs)}: {len(jobs)} conditions × {len(test_in)} tiles", flush=True)
+        print(f"[{i}/{len(todo)}] {run.relative_to(runs)}: {len(jobs)} conditions × {len(test_in)} tiles", flush=True)
 
 
 if __name__ == "__main__":
