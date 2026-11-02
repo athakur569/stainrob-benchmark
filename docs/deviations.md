@@ -98,4 +98,8 @@ what the label rests on. The label is an inferential state, never a property of 
 **Applied to fold 0 (already scored):** seed-averaged ΔG ≈ −0.019; every seed's point estimate is
 negative and every upper bound ≤ +0.009 → "no harm detected — clean"; an alarm there would be a false alarm.
 
+**Addendum (same day):** the thresholds were set **after** fold 0 was observed and before any result existed for
+folds 1–4. They are round values, not fitted ones, and fold 0 meets them with margin (point estimate −0.019
+against ≤ 0.01; every seed's upper bound ≤ +0.009 against ≤ 0.03).
+
 **Raised by:** career-ops. Recorded by the research chat before folds 1–4 had any result.

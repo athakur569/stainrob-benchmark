@@ -359,15 +359,25 @@ def compute_calibration_slope(
     Returns:
         (slope, intercept).
     """
-    from sklearn.linear_model import LogisticRegression
-
-    y_true = np.asarray(y_true).flatten().astype(int)
+    y_true = np.asarray(y_true).flatten().astype(float)
     p = np.clip(np.asarray(y_prob, dtype=float).flatten(), eps, 1 - eps)
     if len(np.unique(y_true)) < 2:
         raise ValueError("calibration slope needs both classes present")
-    lp = np.log(p / (1 - p)).reshape(-1, 1)
-    fit = LogisticRegression(penalty=None, solver="lbfgs", max_iter=1000).fit(lp, y_true, sample_weight=sample_weight)
-    return float(fit.coef_[0, 0]), float(fit.intercept_[0])
+    w = np.ones_like(y_true) if sample_weight is None else np.asarray(sample_weight, dtype=float).flatten()
+    lp = np.log(p / (1 - p))
+    # Unpenalised weighted logistic regression of y on [1, lp] by Newton's method (two parameters,
+    # so each step is a 2x2 solve); same estimate as scikit-learn, far faster inside a bootstrap.
+    X = np.column_stack([np.ones_like(lp), lp])
+    beta = np.zeros(2)
+    for _ in range(100):
+        mu = 1.0 / (1.0 + np.exp(-np.clip(X @ beta, -35, 35)))
+        grad = X.T @ (w * (y_true - mu))
+        hess = (X * (w * mu * (1 - mu))[:, None]).T @ X
+        step = np.linalg.solve(hess + 1e-12 * np.eye(2), grad)
+        beta += step
+        if np.abs(step).max() < 1e-10:
+            break
+    return float(beta[1]), float(beta[0])
 
 
 # =============================================================================

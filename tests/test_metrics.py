@@ -74,3 +74,16 @@ class TestCalibrationSlope:
     def test_single_class_raises(self):
         with pytest.raises(ValueError, match="both classes"):
             compute_calibration_slope(np.ones(10), np.full(10, 0.7))
+
+
+def test_newton_slope_matches_sklearn_with_weights():
+    from sklearn.linear_model import LogisticRegression
+    rng = np.random.default_rng(3)
+    lp = rng.normal(0, 2, 3000)
+    y = (rng.random(3000) < 1 / (1 + np.exp(-0.8 * lp + 0.3))).astype(int)
+    w = rng.integers(0, 4, 3000).astype(float)
+    p = 1 / (1 + np.exp(-lp))
+    ref = LogisticRegression(penalty=None, max_iter=2000).fit(lp.reshape(-1, 1), y, sample_weight=w)
+    slope, intercept = compute_calibration_slope(y, p, sample_weight=w)
+    assert slope == pytest.approx(ref.coef_[0, 0], abs=1e-4)
+    assert intercept == pytest.approx(ref.intercept_[0], abs=1e-4)
