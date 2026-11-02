@@ -243,3 +243,38 @@ Status: **RESOLVED** · **OPEN** (work pending) · **DECISION** (design choice s
 - **Resolution (2026-11-02):** DenseNet-121 is the primary generic encoder; ResNet-50 is reported as a
   sensitivity analysis, which also measures how much the shared starting point matters.
 
+
+### ISS-044 · methods · The stain shift family moves each tile in a random direction
+- **Found (fold 0, E1 analysis check, after the plan was committed):** Tier 1a's signal barely rises across the stain
+  doses (MMD² 0.004 → 0.015 from ΔE 2 to 12, against 0.04 → 0.82 for blur), although the model's accuracy does fall.
+- **Cause:** the stain family scales each tile's haematoxylin and eosin by 1 + strength·u, with u drawn separately
+  for every tile in [−1, 1]. Across a batch the changes point in all directions and largely cancel, so the batch
+  looks like added stain noise rather than a laboratory whose staining has drifted one way. H3 assumed the latter.
+- **Resolution:** H3 is reported as specified, with this stated. A consistent-direction family, `stain_batch`
+  (both stains increased for every tile), is implemented and its doses fixed on the same training-split sample
+  (`configs/shift_doses_camelyon17_posthoc_stain_batch.json`; ΔE 2–12, all reached). It is labelled post hoc
+  and has not been run on test tiles.
+
+### ISS-045 · methods · The Tier 2 reference is the model's own training tiles
+- **Found (same check):** Tier 2 alarmed on the unshifted in-domain test batch, with no shift at all, in 2 of 3 seeds.
+- **Cause:** the pre-registered reference is the fold's training tiles, which the model has nearly memorised. Its
+  responses to any unseen tiles differ from its responses to its training tiles, so "unseen" is detected rather than
+  "shifted". A laboratory validates against held-out data the model did not train on; that is the faithful reference.
+- **Resolution:** the pre-registered Tier 2 is reported as specified, with this flaw stated. A corrected Tier 2, with
+  held-out in-domain tiles as the reference, will be reported beside it as a post-hoc analysis, neither called primary.
+  Fold 0's Tier 2 silence on the real arm is therefore not counted as evidence that Tier 2 works.
+
+### ISS-047 · testing · Plan-lock tests read the real repository
+- **Found:** two tests that check test sets stay sealed without a committed plan started failing once the plan was
+  committed: they called the lock on the real repository, where it correctly opened.
+- **Resolution:** the tests point the lock at an empty temporary repository. Lock behaviour unchanged; no result affected.
+
+### ISS-048 · data · A few hard patients sit inside the hospital-level gaps
+- **Found (real arm, all folds):** the same tumour patients are missed whichever fold they fall in. Patient 042 is
+  missed in all five folds; 096 makes fold 4 inconclusive; 052 contributes to fold 2's gap. The contact sheet
+  (`docs/figures/missed_patients_e1.png`) suggests two kinds: tumour areas that are mostly stroma with scattered single
+  cells (042, 096), and outlines that appear to include lymphoid tissue (052).
+- **Why it matters:** with 4–7 tumour patients per held-out hospital, one hard patient can change a fold's label, so
+  part of a "hospital" gap is a patient effect. Slide-level TCGA labels, which have no outlines, make this harder.
+- **Next:** pathologist review of the contact sheet (true tumour vs coarse outline); a leave-one-tumour-patient-out
+  sensitivity for ΔG.
