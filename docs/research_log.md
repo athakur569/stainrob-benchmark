@@ -312,3 +312,6 @@ Status: **RESOLVED** · **OPEN** (work pending) · **DECISION** (design choice s
   α = 0.05 (mean false-alarm rate over folds: pixel statistics 0.023, DenseNet-121 0.032, ResNet-50 0.042; maximum
   0.060). ResNet-50 falls from 0.543 to 0.042. Slide clusters stay at 0.21–0.43 with either projection: ISS-046 and
   ISS-049 are separate faults, and both fixes are needed.
+- **Matched contrast (P1d, same patient thirds for every arm):** ResNet-50 false-alarm rate 0.446 with the
+  reference-fitted projection, 0.026 pooled, 0.021 fitted on a separate third (external). Pooled and external are
+  equivalent under the null; which to use is decided by power under shift (P3).

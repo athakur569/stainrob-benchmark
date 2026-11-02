@@ -11,7 +11,7 @@ Status column: *specified* = written, not run · *run (training tiles only)* = n
 
 | ID | Addresses | What | Data it reads | Status |
 |---|---|---|---|---|
-| P1 | ISS-046, ISS-049 | Patient-split null check (reference-fitted and pooled projection) | training tiles only | run (training tiles only) |
+| P1 | ISS-046, ISS-049 | Patient-split null check (P1–P1d: clusters × projection source) | training tiles only | run (training tiles only) |
 | P2 | ISS-044 | Consistent-direction stain family (`stain_batch`) | test_in tiles, shifted | awaiting decision |
 | P3 | ISS-045, ISS-046 | Held-out reference and patient clusters for every tier | test_in, test_cross | awaiting decision |
 | P4 | ISS-048 | ΔG without individual tumour patients | existing test predictions | awaiting pathologist review |
@@ -66,6 +66,17 @@ P1d gives the matched contrast.
 halves. For a matched contrast, the reference-fitted and pooled arms are rerun on the **same** thirds as P1c (`--thirds`;
 the projection third unused), so the three arms differ only in where the projection is fitted. Headline rates stay
 those of P1/P1b (halves); P1d is for the contrast.
+
+**P1d result (same thirds for all arms, patient clusters, mean (range) over folds):**
+
+| Tier | Reference-fitted | Pooled | External |
+|---|---|---|---|
+| 1a pixel statistics | 0.023 (0.010–0.045) | 0.018 (0.010–0.030) | 0.016 (0.010–0.025) |
+| 1b DenseNet-121 | 0.053 (0.030–0.090) | 0.024 (0.005–0.040) | 0.023 (0.010–0.050) |
+| 1b ResNet-50 | 0.446 (0.345–0.530) | 0.026 (0.010–0.045) | 0.021 (0.010–0.040) |
+
+On matched patients, pooled and external are indistinguishable under the null; the reference-fitted projection fails
+for ResNet-50 at thirds as at halves. The choice between pooled and external is left to power under shift (P3).
 
 ## P2 · Consistent-direction stain family
 
