@@ -36,7 +36,7 @@ Status: **RESOLVED** · **OPEN** (work pending) · **DECISION** (design choice s
 | ISS-040 | 2026-10 | reproducibility | Worker seeding replayed the same augmentations every epoch | RESOLVED |
 | ISS-041 | 2026-10 | normalisation | Macenko (E2) turned real tiles nearly black | RESOLVED |
 | ISS-042 | 2026-10 | methods | SSIM cannot match stain shifts to the other shift families | RESOLVED |
-| ISS-043 | 2026-10 | methods | The generic-encoder monitor tier starts from the same weights as the classifier | DECISION |
+| ISS-043 | 2026-10 | methods | The generic-encoder monitor tier starts from the same weights as the classifier | RESOLVED |
 
 ---
 
@@ -237,5 +237,6 @@ Status: **RESOLVED** · **OPEN** (work pending) · **DECISION** (design choice s
 - **Options:** keep ResNet-50 and state the coupling; switch Tier 1b to a different open architecture
   (DenseNet-121 is implemented and checked on real tiles); or report both, DenseNet-121 primary and ResNet-50 as a
   sensitivity analysis.
-- **Decision needed** before the analysis plan is fixed.
+- **Resolution (2026-11-02):** DenseNet-121 is the primary generic encoder; ResNet-50 is reported as a
+  sensitivity analysis, which also measures how much the shared starting point matters.
 
