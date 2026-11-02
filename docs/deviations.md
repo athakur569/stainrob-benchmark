@@ -103,3 +103,13 @@ folds 1–4. They are round values, not fitted ones, and fold 0 meets them with 
 against ≤ 0.01; every seed's upper bound ≤ +0.009 against ≤ 0.03).
 
 **Raised by:** career-ops. Recorded by the research chat before folds 1–4 had any result.
+
+## D6 · 2026-11-02 · Combining the three seeds into one alarm (specified before any monitor result)
+
+**What changes.** Tier 2 and the AND rule depend on the trained model, so each condition and fold has three alarm
+decisions (seeds 42, 99, 123). The plan does not say how they combine. Fixed here: **a condition alarms if the
+majority (at least 2 of 3) of its seeds alarm**; per-seed counts are reported alongside. Tier 1 does not depend on
+the model and has one decision per fold and batch. Continuous signals are averaged over seeds (Tier 2 Mahalanobis).
+
+**Why.** Seeds are a nuisance (ISS-036); a majority vote treats them symmetrically without letting one seed decide.
+Recorded by the research chat before any monitor statistic on a test tile was computed.
