@@ -51,3 +51,19 @@ result exists.
 first removes that freedom.
 
 **Recorded by:** the research chat. No test result had been seen when this was written.
+
+## D3 · 2026-11-02 · Alarms on the real arm; Tier 2 null check (specified before any monitor result)
+
+**What changes.**
+1. For each fold, the alarm decision of each tier and of the AND rule on `test_cross` (α = 0.05) is
+   reported beside that fold's ΔG. The plan reports alarm behaviour for the synthetic arm only (§9.6) and
+   continuous signals for the real arm (§9.4). A fold whose ΔG interval includes 0 is a real-data
+   **harmless shift** — a different laboratory, and for some hospitals a different scanner type, at no
+   measurable cost — so an alarm there is a false alarm with respect to harm, and silence is the correct
+   output. A fold whose ΔG interval excludes 0 is a real-data harmful shift.
+2. The standing null check (§9.7) for Tier 2 uses the E1 seed-42 model of each fold. Tier 2 depends on the
+   model, and repeating it for all 60 runs adds nothing to a calibration check.
+
+**Why.** Fold 0's real-arm ΔG (run log) includes 0: a harmless shift on real data, the counterpart of the
+synthetic harmless doses. Raised by career-ops; specified here before any monitor statistic on a test tile
+had been computed.

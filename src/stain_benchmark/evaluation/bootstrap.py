@@ -150,3 +150,56 @@ def compare_predictors(delta_g_point: pd.Series, delta_g_boot: np.ndarray, predi
                      f"diff_vs_{names[0]}": float(rho - spearmanr(X[names[0]], delta_g_point.to_numpy()).statistic),
                      "diff_low": float(np.nanquantile(d, a)), "diff_high": float(np.nanquantile(d, 1 - a))})
     return pd.DataFrame(rows)
+
+
+def joint_delta_g_seeds(references: list[pd.DataFrame], shifted: list[dict[str, pd.DataFrame]],
+                        n_boot: int = 2000, seed: int = 0, metric: str = "auroc") -> tuple[pd.Series, np.ndarray]:
+    """As ``joint_delta_g``, averaged over seeds (analysis plan §5).
+
+    ``references[s]`` and ``shifted[s]`` are one seed's predictions on the same tiles in the same order.
+    One set of patient draws serves every seed and condition; ΔG is computed per seed and averaged
+    within each resample.
+    """
+    names = list(shifted[0])
+    ref0 = references[0]
+    for r, sh in zip(references, shifted):
+        if not np.array_equal(r["tile_id"].to_numpy(), ref0["tile_id"].to_numpy()) or list(sh) != names:
+            raise ValueError("every seed must have the same tiles in the same order and the same conditions")
+        for c in names:
+            if not np.array_equal(sh[c]["tile_id"].to_numpy(), ref0["tile_id"].to_numpy()):
+                raise ValueError(f"condition {c!r} does not have the reference's tiles in the same order")
+    fn = weighted_auroc if metric == "auroc" else weighted_slope
+    y = ref0["label"].to_numpy()
+    W = patient_weights(ref0["patient_id"].to_numpy(), tumour_patient_set(ref0), n_boot, seed)
+    ones = np.ones(len(y))
+
+    def dg(w):
+        return np.mean([[fn(y, r["p_tumour"].to_numpy(), w) - fn(y, sh[c]["p_tumour"].to_numpy(), w) for c in names]
+                        for r, sh in zip(references, shifted)], axis=0)
+
+    point = pd.Series(dg(ones), index=names)
+    boots = np.array([dg(w) for w in W])
+    return point, boots
+
+
+def delta_g_seeds_interval(pred_in: list[pd.DataFrame], pred_cross: list[pd.DataFrame], n_boot: int = 2000,
+                           seed: int = 0, level: float = 0.95, metric: str = "auroc") -> Interval:
+    """Real-arm ΔG averaged over seeds; test_in and test_cross patients resampled independently,
+    each with one set of draws shared by every seed."""
+    fn = weighted_auroc if metric == "auroc" else weighted_slope
+    sets = []
+    for k, preds in enumerate((pred_in, pred_cross)):
+        p0 = preds[0]
+        for p in preds:
+            if not np.array_equal(p["tile_id"].to_numpy(), p0["tile_id"].to_numpy()):
+                raise ValueError("every seed must have the same tiles in the same order")
+        W = patient_weights(p0["patient_id"].to_numpy(), tumour_patient_set(p0), n_boot, seed + k)
+        sets.append((p0["label"].to_numpy(), [p["p_tumour"].to_numpy() for p in preds], W))
+
+    def dg(b):
+        (yi, pis, Wi), (yc, pcs, Wc) = sets
+        wi = np.ones(len(yi)) if b is None else Wi[b]
+        wc = np.ones(len(yc)) if b is None else Wc[b]
+        return np.mean([fn(yi, pi, wi) - fn(yc, pc, wc) for pi, pc in zip(pis, pcs)])
+
+    return _interval(float(dg(None)), np.array([dg(b) for b in range(n_boot)]), level)

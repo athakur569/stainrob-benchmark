@@ -96,3 +96,16 @@ def test_joint_slope_delta_g_detects_flattened_probabilities():
     a_point, _ = joint_delta_g(ref, {"flat": flat}, n_boot=10, metric="auroc")
     assert a_point["flat"] == pytest.approx(0)                       # AUROC cannot see it
     assert point["flat"] < 0 and boots[:, 0].max() < 0               # slope rises (underconfident) -> negative drop
+
+
+def test_seed_averaged_joint_delta_g():
+    from stain_benchmark.evaluation.bootstrap import delta_g_seeds_interval, joint_delta_g_seeds
+    refs = [make_pred(sep=2.0, seed=s) for s in (0, 1)]
+    refs = [r.assign(tile_id=refs[0].tile_id, patient_id=refs[0].patient_id, label=refs[0].label) for r in refs]
+    shifted = [{"same": r.copy(), "noise": r.assign(p_tumour=np.random.default_rng(9).random(len(r)))} for r in refs]
+    point, boots = joint_delta_g_seeds(refs, shifted, n_boot=100)
+    assert point["same"] == 0 and np.allclose(boots[:, 0], 0) and point["noise"] > 0.2
+    single = [joint_delta_g(r, s, n_boot=5)[0]["noise"] for r, s in zip(refs, shifted)]
+    assert point["noise"] == pytest.approx(np.mean(single))
+    iv = delta_g_seeds_interval(refs, [r.assign(p_tumour=0.5) for r in refs], n_boot=100)
+    assert iv.low <= iv.estimate <= iv.high and iv.estimate > 0
