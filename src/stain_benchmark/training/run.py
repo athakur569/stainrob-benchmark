@@ -66,8 +66,9 @@ class PreRegistrationError(RuntimeError):
     """Raised when test sets would be scored before the analysis plan is committed."""
 
 
-def require_committed_plan(repo: Path = REPO, plan: str = ANALYSIS_PLAN) -> str:
+def require_committed_plan(repo: Path | None = None, plan: str = ANALYSIS_PLAN) -> str:
     """Return the commit that last changed the analysis plan; raise unless it is committed and clean."""
+    repo = REPO if repo is None else repo
     def git(*args):
         return subprocess.run(["git", *args], cwd=repo, capture_output=True, text=True).stdout.strip()
     last = git("log", "-1", "--format=%H", "--", plan)

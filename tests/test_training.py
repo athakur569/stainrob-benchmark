@@ -74,7 +74,18 @@ def test_unknown_condition_raises(frozen, tmp_path):
         train_run(frozen, 1, 42, tmp_path / "x", condition="E9", device="cpu", pretrained=False)
 
 
-def test_test_sets_sealed_without_committed_plan(frozen, tmp_path):
+@pytest.fixture
+def no_plan(tmp_path, monkeypatch):
+    """Point the lock at an empty git repo: no committed analysis plan (the real repo has one)."""
+    import subprocess
+    import stain_benchmark.training.run as run_mod
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+    monkeypatch.setattr(run_mod, "REPO", repo)
+
+
+def test_test_sets_sealed_without_committed_plan(frozen, tmp_path, no_plan):
     with pytest.raises(PreRegistrationError):
         train_run(frozen, 1, 42, tmp_path / "x", schedule=TINY, num_workers=0, device="cpu",
                   pretrained=False, progress=False)
@@ -166,7 +177,7 @@ def test_pilot_table_run_needs_no_plan_and_scores_shifts(frozen, tmp_path):
     assert len(a) == len(b) == len(pilot) and not np.allclose(a.logit_1, b.logit_1)
 
 
-def test_custom_table_with_test_role_still_locked(frozen, tmp_path):
+def test_custom_table_with_test_role_still_locked(frozen, tmp_path, no_plan):
     from stain_benchmark.data.dataset import fold_table
     with pytest.raises(PreRegistrationError):
         train_run(frozen, 0, 1, tmp_path / "q", schedule=TINY, num_workers=0, device="cpu", pretrained=False,
