@@ -73,9 +73,20 @@ def test_reference_fitted_projection_false_alarms_in_high_dimension():
     r = np.random.default_rng(1)
     X = r.normal(size=(120, 400))
     ids = np.repeat(np.arange(30), 4)
-    alarms = {"reference": 0, "pooled": 0}
+    ext = r.normal(size=(120, 400))
+    alarms = {"reference": 0, "pooled": 0, "external": 0}
     for i in range(10):
         m = np.isin(ids, np.random.default_rng(i).permutation(30)[:15])
         for fit_on in alarms:
-            alarms[fit_on] += tier1(X[m], X[~m], ids[m], ids[~m], 10, n_permutations=49, seed=i, fit_on=fit_on)["flagged"]
-    assert alarms["reference"] >= 5 and alarms["pooled"] <= 2
+            alarms[fit_on] += tier1(X[m], X[~m], ids[m], ids[~m], 10, n_permutations=49, seed=i, fit_on=fit_on,
+                                    external=ext if fit_on == "external" else None)["flagged"]
+    assert alarms["reference"] >= 5 and alarms["pooled"] <= 2 and alarms["external"] <= 2
+
+
+def test_prepare_external_needs_external_data():
+    import pytest
+    x = np.zeros((5, 3))
+    with pytest.raises(ValueError):
+        prepare(x, x, None, fit_on="external")
+    with pytest.raises(ValueError):
+        prepare(x, x, None, fit_on="pooled", external=x)

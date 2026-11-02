@@ -10,7 +10,9 @@ splits the training PATIENTS in half instead and runs each tier twice on the sam
     clusters = patient   the correction proposed after fold 0 (ISS-046)
 
 ``--fit-on pooled`` fits the standardisation and principal components on both halves together instead of
-the reference half only (ISS-049); output columns are the same.
+the reference half only (ISS-049). ``--fit-on external`` splits the training patients into thirds instead:
+one third fits the projection, the other two are reference and deployment (still training tiles only).
+Output columns are the same.
 
 Training tiles only: no test data is read. Not part of the pre-registered analysis; reported as a
 labelled post-hoc diagnostic.
@@ -62,13 +64,21 @@ def job(args) -> dict:
     flags = {"slide": 0, "patient": 0}
     for i in range(n_splits):
         rng = np.random.default_rng([int(fold), i])           # same splits for every tier and cluster type
-        m = np.isin(patients, rng.permutation(upat)[: len(upat) // 2])
+        order = rng.permutation(upat)
+        ext = None
+        if fit_on == "external":                              # thirds: projection / reference / deployment
+            k = len(upat) // 3
+            fit_rows = np.isin(patients, order[:k])
+            ext, keep, m = X[fit_rows], ~fit_rows, np.isin(patients, order[k:2 * k])
+        else:
+            keep = np.ones(len(patients), bool)
+            m = np.isin(patients, order[: len(upat) // 2])
         for kind, ids in (("slide", slides), ("patient", patients)):
             if tier == "tier2":
-                flags[kind] += tier2(X[m], X[~m], ids[m], ids[~m], seed=i)["flagged"]
+                flags[kind] += tier2(X[m], X[~m & keep], ids[m], ids[~m & keep], seed=i)["flagged"]
             else:
-                flags[kind] += tier1(X[m], X[~m], ids[m], ids[~m], ncomp, n_permutations=99, seed=i,
-                                     fit_on=fit_on)["flagged"]
+                flags[kind] += tier1(X[m], X[~m & keep], ids[m], ids[~m & keep], ncomp, n_permutations=99,
+                                     seed=i, fit_on=fit_on, external=ext)["flagged"]
     return {"fold": fold, "tier": tier, "fit_on": fit_on, "patients": len(upat), "splits": n_splits, "nominal_alpha": ALPHA,
             "false_alarm_slide_clusters": flags["slide"] / n_splits,
             "false_alarm_patient_clusters": flags["patient"] / n_splits}
@@ -82,7 +92,7 @@ def main() -> None:
     ap.add_argument("--out", required=True)
     ap.add_argument("--splits", type=int, default=200)
     ap.add_argument("--jobs", type=int, default=10)
-    ap.add_argument("--fit-on", default="reference", choices=("reference", "pooled"))
+    ap.add_argument("--fit-on", default="reference", choices=("reference", "pooled", "external"))
     ap.add_argument("--tiers", default=",".join(TIERS))
     args = ap.parse_args()
     out = Path(args.out)

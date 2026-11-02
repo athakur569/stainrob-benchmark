@@ -42,23 +42,28 @@ def per_slide_subsample(slide_ids: np.ndarray, k: int = TILES_PER_SLIDE, seed: i
     return np.sort(np.concatenate(keep))
 
 
-FIT_ON = ("reference", "pooled")
+FIT_ON = ("reference", "pooled", "external")
 
 
 def prepare(ref: np.ndarray, dep: np.ndarray, n_components: int | None,
-            fit_on: str = "reference") -> tuple[np.ndarray, np.ndarray]:
+            fit_on: str = "reference", external: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray]:
     """Standardise both and optionally project onto the top principal components.
 
     ``fit_on="reference"`` (pre-registered, D2) fits mean, SD and components on the reference only.
     ``fit_on="pooled"`` (post hoc, ISS-049) fits them on reference and deployment together — label-free,
     and symmetric in the two batches, which a permutation test needs: components fitted on one batch
     capture that batch's own variation, and in high dimension the test then separates any two batches.
+    ``fit_on="external"`` (post hoc) fits them on a third set (``external``) disjoint from both batches, e.g.
+    the fold's training tiles; it does not depend on the split at all.
     """
     if fit_on not in FIT_ON:
         raise ValueError(f"fit_on must be one of {FIT_ON}")
     ref = np.asarray(ref, dtype=np.float64)
     dep = np.asarray(dep, dtype=np.float64)
-    fit = ref if fit_on == "reference" else np.vstack([ref, dep])
+    if (fit_on == "external") != (external is not None):
+        raise ValueError("pass external data if, and only if, fit_on='external'")
+    fit = {"reference": ref, "pooled": np.vstack([ref, dep]) if fit_on == "pooled" else None,
+           "external": None if external is None else np.asarray(external, dtype=np.float64)}[fit_on]
     mu, sd = fit.mean(0), fit.std(0) + 1e-8
     r, d = (ref - mu) / sd, (dep - mu) / sd
     if n_components is not None and r.shape[1] > n_components:
@@ -68,9 +73,10 @@ def prepare(ref: np.ndarray, dep: np.ndarray, n_components: int | None,
 
 
 def tier1(ref: np.ndarray, dep: np.ndarray, ref_slides: np.ndarray, dep_slides: np.ndarray,
-          n_components: int | None, n_permutations: int = 200, seed: int = 0, fit_on: str = "reference") -> dict:
+          n_components: int | None, n_permutations: int = 200, seed: int = 0, fit_on: str = "reference",
+          external: np.ndarray | None = None) -> dict:
     """Tier 1 on one deployment batch: MMD² (primary), mean Wasserstein, p-values and the alarm."""
-    r, d = prepare(ref, dep, n_components, fit_on)
+    r, d = prepare(ref, dep, n_components, fit_on, external)
     res = Tier1Monitor(alpha=ALPHA, n_permutations=n_permutations, seed=seed).fit(
         r, groups=np.asarray(ref_slides)).score(d, groups=np.asarray(dep_slides))
     return {"mmd2": res.mmd_squared, "wasserstein": res.wasserstein_mean, "p_mmd": res.p_mmd,

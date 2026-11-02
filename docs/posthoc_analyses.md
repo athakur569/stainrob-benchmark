@@ -45,6 +45,13 @@ and 0.00.
 standardisation and components fitted on reference and deployment together. This is label-free and available at
 deployment, and it keeps the two batches symmetric.
 
+**P1c — added before running (raised by career-ops):** a third arm, `--fit-on external`: the projection is fitted on a
+set disjoint from both batches, so it does not depend on the split at all. To stay on training tiles, each null split
+divides the training patients into thirds (projection / reference / deployment). In P3 the external set is the fold's
+training tiles, disjoint from `test_in` and `test_cross`. Principle behind P1b and P1c: a permutation test is exact
+only if every quantity in its statistic is unchanged by permuting the batch labels; a projection fitted on one batch
+is not. The arm that holds α is chosen by power under shift in P3, not by false-alarm rate alone.
+
 ## P2 · Consistent-direction stain family
 
 The pre-registered stain family draws a direction per tile, so a batch's changes cancel (ISS-044). `stain_batch`
@@ -70,7 +77,8 @@ Two changes to the monitor, made together because both concern what the referenc
    - ΔG is unchanged (all `test_in`), so the outcome is identical to the pre-registered one; only the predictors change.
 2. **Clusters = patients** instead of slides, for permutation (Tier 1) and cross-fitting/bootstrap (Tier 2): P1 shows
    slide clusters exceed α by 6–20× on patient splits.
-3. **Tier 1 projection fitted on reference and deployment pooled** (ISS-049), if P1b shows it holds α.
+3. **Tier 1 projection fitted on pooled or external data** (ISS-049), whichever holds α in P1b/P1c; if both do,
+   both are reported under shift and the one with more power is named.
 
 Everything else as pre-registered (D2: standardisation and PCA-50 fitted on the reference, at most 8 tiles per slide,
 α = 0.05, AND rule Tier 1b AND Tier 2, seed majority D6). Reported: reference size (patients, tiles) per fold;
