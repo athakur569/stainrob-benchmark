@@ -278,3 +278,10 @@ Status: **RESOLVED** · **OPEN** (work pending) · **DECISION** (design choice s
   part of a "hospital" gap is a patient effect. Slide-level TCGA labels, which have no outlines, make this harder.
 - **Next:** pathologist review of the contact sheet (true tumour vs coarse outline); a leave-one-tumour-patient-out
   sensitivity for ΔG.
+- **Stage check (2 Nov, same day):** all four most-missed patients' slides are **macro**metastases in the official
+  `stages.csv` (042 node 3, 052 node 1, 092 node 1, 096 node 0); ITC slides are not in the tile set. So the pattern is
+  not isolated tumour cells correctly outlined. Micrometastasis tiles are not missed more than macro overall (in-domain
+  13% vs 24%; cross-hospital 37% vs 30%, 15 slides, 612 tile scores). Without the four patients the macro miss rate is
+  11%. Case mix is similar across hospitals (3–4 macro slides each; micro < 6% of every hospital's tumour tiles), so
+  stage mix does not explain the hospital 2 gap. Question for the pathologist review, made specific: inside these four
+  macrometastasis outlines, are the missed tiles tumour (e.g. a sparse infiltrative pattern) or enclosed non-tumour tissue?
