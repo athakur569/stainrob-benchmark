@@ -5,8 +5,9 @@
         --out /media/abhi/camelyon17/derived/tier1_v1/train_split/unshifted --subset train-split
     python scripts/extract_tier1.py ... --shift blur --dose 3      # dose index into the dose table
 
-Subsets: ``train-split`` = tiles of patients in the training split (allowed now); ``all`` = every
-QC-passing tile, which needs the committed analysis plan (DR-012), like scoring test sets.
+Subsets: ``train-split`` = tiles of patients in the training split; ``val-test`` = tiles of validation
+and test patients (the union of every fold's test_in, for the synthetic arm); ``all`` = every QC-passing
+tile (for the real arm). ``val-test`` and ``all`` need the committed analysis plan (DR-012).
 """
 
 import argparse
@@ -23,7 +24,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--tiles", required=True)
     ap.add_argument("--out", required=True)
-    ap.add_argument("--subset", choices=["train-split", "all"], required=True)
+    ap.add_argument("--subset", choices=["train-split", "val-test", "all"], required=True)
     ap.add_argument("--shift", default=None, help="shift family from the dose table")
     ap.add_argument("--dose", type=int, default=None, help="dose index (0-4) in the dose table")
     ap.add_argument("--doses", default="configs/shift_doses_camelyon17.json")
@@ -35,11 +36,15 @@ def main() -> None:
     tiles_dir = Path(args.tiles)
     man = pd.read_csv(tiles_dir / "manifest.csv")
     man = man[man["qc_pass"]]
+    ps = pd.read_csv(tiles_dir / "splits" / "patient_splits.csv")
     if args.subset == "all":
         require_committed_plan()
         table, rule = man, "all QC-passing tiles"
+    elif args.subset == "val-test":
+        require_committed_plan()
+        table = man[man["patient_id"].isin(set(ps.loc[ps["split"].isin(["val", "test"]), "patient_id"]))]
+        rule = "tiles of validation and test patients"
     else:
-        ps = pd.read_csv(tiles_dir / "splits" / "patient_splits.csv")
         table = man[man["patient_id"].isin(set(ps.loc[ps["split"] == "train", "patient_id"]))]
         rule = "tiles of training-split patients"
 

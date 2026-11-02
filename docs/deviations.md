@@ -28,3 +28,26 @@ magnitude, which measure still orders the families by harm?
   is between the monitor signals and 1 − SSIM, which does vary across families at a fixed ΔE.
 
 **Raised by:** career-ops; recorded by the research chat. No test result had been seen when this was written.
+
+## D2 · 2026-11-02 · Which statistic is "the" signal, and a tractable computation (specified before any result)
+
+**What changes.** The plan lists two statistics per tier (§6) but does not say which is the continuous
+signal used in H1–H3, nor how the monitors are computed at this scale. Both are fixed here, before any test
+result exists.
+
+- **Primary continuous signal per tier:** Tier 1a and Tier 1b, MMD² between reference and deployment
+  features; Tier 2, mean Mahalanobis distance. Secondary: mean Wasserstein distance (Tier 1), mean energy
+  (Tier 2).
+- **Features:** each tier's features are standardised with the reference's mean and SD. Tier 1b (1,024-d)
+  and Tier 2 (2,048-d) are then projected onto the reference's first 50 principal components (fitted on the
+  reference only). Tier 1a (23-d) is used as is. This keeps Tier 2's covariance estimable: with more
+  dimensions than reference tiles, the monitor would fall back to a diagonal covariance.
+- **Tiles per slide:** at most 8 tiles per slide (seed 0) for reference and deployment alike, in every monitor
+  computation — the same rule as the real-tile null check (ISS-039). Without it, each condition needs a
+  permutation test on a ~9,000 × 9,000 kernel, for 36 doses × 5 folds × 4 conditions.
+- **Clusters:** slide ids, for every permutation and bootstrap inside the monitor (ISS-039).
+
+**Why.** Without this, the choice of statistic could be made after seeing which one looks better. Fixing it
+first removes that freedom.
+
+**Recorded by:** the research chat. No test result had been seen when this was written.
