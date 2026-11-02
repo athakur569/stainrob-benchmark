@@ -135,14 +135,19 @@ def _git_state(repo: Path) -> tuple[str, bool]:
 
 
 def score_tiles(model: ResNet50Classifier, tiles_dir: str | Path, table: pd.DataFrame, device: torch.device,
-                normalizer=None, shift: tuple[str, float, int] | None = None, num_workers: int = 8) -> pd.DataFrame:
-    """Predictions for the rows of ``table``, optionally with a synthetic ``shift`` applied on read."""
+                normalizer=None, shift: tuple[str, float, int] | None = None, num_workers: int = 8,
+                return_features: bool = False):
+    """Predictions for the rows of ``table``, optionally with a synthetic ``shift`` applied on read.
+
+    With ``return_features`` also returns the (n, 2048) float16 penultimate features (Tier 2 input).
+    """
     loader = DataLoader(TileDataset(tiles_dir, table.reset_index(drop=True), normalizer=normalizer, shift=shift),
                         batch_size=128, shuffle=False, num_workers=num_workers, pin_memory=device.type == "cuda")
-    logits, _ = predict(model, loader, device)
+    logits, feats = predict(model, loader, device)
     p = torch.softmax(torch.from_numpy(logits), dim=1)[:, 1].numpy()
-    return table.reset_index(drop=True)[["tile_id", "patient_id", "slide_id", "center", "label"]].assign(
+    pred = table.reset_index(drop=True)[["tile_id", "patient_id", "slide_id", "center", "label"]].assign(
         logit_0=logits[:, 0], logit_1=logits[:, 1], p_tumour=p)
+    return (pred, feats) if return_features else pred
 
 
 @torch.no_grad()
