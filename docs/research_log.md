@@ -290,3 +290,21 @@ Status: **RESOLVED** · **OPEN** (work pending) · **DECISION** (design choice s
   below 0.1; median 0.05), and mostly interior (fully inside the outline: 56% for 042, 96% for 096). For other tumour
   patients, 37% of misses are below 0.1 (median 0.17). The model sees no tumour in the interior of these deposits:
   this is about tissue content, which needs the pathologist review; it is not an outline-edge artefact.
+
+### ISS-049 · statistics · A projection fitted on the reference alone makes any two batches look different
+- **Found (post-hoc null check P1, training tiles only):** on random halves of the training patients (no shift),
+  with whole patients permuted, Tier 1b with ResNet-50 still alarmed in 42–60% of splits at α = 0.05. With a random
+  patient split and patient-level permutation the observed split is itself one of the permutations, so the test should
+  hold α exactly; it did not.
+- **Cause:** the pre-registered pipeline (D2) standardises the features and projects them onto 50 principal components
+  fitted on the **reference only**, then runs the permutation test in that space. A permutation test is exact only if
+  every quantity in its statistic is unchanged by permuting the batch labels; a projection fitted on one batch is not.
+  In 2,048 dimensions with a few hundred tiles, the top components describe the reference's own patients, so any
+  other batch looks different. Severity follows dimension: ResNet-50 (2,048) 42–60%, DenseNet-121 (1,024) 3.5–8%,
+  pixel statistics (23, no projection) 1.5–3.5%.
+- **Check (fold 1, 40 splits, patient clusters):** ResNet-50 0.50 with the reference-fitted projection, 0.00 with the
+  projection fitted on both batches pooled; DenseNet-121 0.05 and 0.00.
+- **Resolution:** the pre-registered Tier 1b is reported as specified, with this flaw stated; the ResNet-50 sensitivity
+  tier cannot be interpreted as specified. Two permutation-invariant alternatives are implemented and specified before
+  running (`docs/posthoc_analyses.md`, P1b/P1c): projection fitted on both batches pooled, or on a set disjoint from
+  both (in deployment, the training tiles). Both are label-free.
