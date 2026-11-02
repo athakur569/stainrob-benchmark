@@ -67,3 +67,14 @@ first removes that freedom.
 **Why.** Fold 0's real-arm ΔG (run log) includes 0: a harmless shift on real data, the counterpart of the
 synthetic harmless doses. Raised by career-ops; specified here before any monitor statistic on a test tile
 had been computed.
+
+## D4 · 2026-11-02 · Which Tier 1 enters the AND rule (specified before any monitor result)
+
+**What changes.** The plan's AND rule (§9.6) combines "Tier 1" and Tier 2 without saying which Tier 1. Fixed
+here: the **primary AND rule is Tier 1b (DenseNet-121) AND Tier 2**; Tier 1a AND Tier 2 is reported as
+secondary. A tier flags when either of its two statistics is significant at α/2 (MMD², Wasserstein for
+Tier 1; Mahalanobis, energy for Tier 2), as implemented in wsidrift with slide clusters.
+
+**Why.** DR-004 and DR-018 make Tier 1b the primary input-level tier; the H3 prediction expects Tier 1a to
+over-weight stain, so making it primary for alarms would build the expected failure into the headline
+rule. Recorded by the research chat before any monitor statistic on a test tile was computed.
