@@ -63,6 +63,7 @@ one of them can change a fold's label. Two computations on the predictions alrea
 1. **Leave-one-tumour-patient-out ΔG**, every fold × condition: the seed-averaged ΔG recomputed with each tumour patient
    removed in turn from `test_in` and from `test_cross` (the same patient-clustered bootstrap); reported as the range.
    This needs no judgement about which patients to question.
+   Reported as its own line: hospital 2's ΔG (the only harm fold) without patients 042 and 052, singly and together.
 2. **With and without the patients a pathologist flags** as having outlines that enclose little tumour, after the review
    of `docs/figures/missed_patients_e1.png` (and further tiles if needed). Both numbers are reported; no patient is
    removed from the primary analysis.

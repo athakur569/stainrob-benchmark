@@ -285,3 +285,8 @@ Status: **RESOLVED** · **OPEN** (work pending) · **DECISION** (design choice s
   11%. Case mix is similar across hospitals (3–4 macro slides each; micro < 6% of every hospital's tumour tiles), so
   stage mix does not explain the hospital 2 gap. Question for the pathologist review, made specific: inside these four
   macrometastasis outlines, are the missed tiles tumour (e.g. a sparse infiltrative pattern) or enclosed non-tumour tissue?
+- **Confidence and position of the missed tiles (E1, all folds and seeds):** the labelling rule is ≥ 50% of the tile
+  inside the outline, not any overlap. Missed tiles of patients 042 and 096 are confident negatives (68–69% scored
+  below 0.1; median 0.05), and mostly interior (fully inside the outline: 56% for 042, 96% for 096). For other tumour
+  patients, 37% of misses are below 0.1 (median 0.17). The model sees no tumour in the interior of these deposits:
+  this is about tissue content, which needs the pathologist review; it is not an outline-edge artefact.
