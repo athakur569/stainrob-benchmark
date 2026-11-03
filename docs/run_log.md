@@ -195,3 +195,7 @@ seed-averaged; this metric was not pre-registered and was examined before this e
 - **Clinically:** at hospital 4 the primary outcome reported no detectable harm (AUROC gap 0.008) while the model, for
   one patient, scored 89% of tumour tiles below the threshold with specificity intact — silent false negatives in a
   specific patient, with the aggregate reporting nothing wrong.
+- **Scope of what H1 and H2 tested.** Both were evaluated against ΔG(AUROC). Given the above, "the monitor tracks
+  tile-level AUROC loss" is what was tested, not "the monitor tracks harm": the pre-registered results support the first
+  claim only, and the results paper must keep the two apart. Redefining the outcome (per-patient sensitivity at an
+  operating threshold, or slide/case-level detection) means the synthetic arm is the main thing the next version re-runs.
