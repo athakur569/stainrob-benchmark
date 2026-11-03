@@ -15,7 +15,10 @@ unreliable, without needing new labels at that site.
 >   (research log ISS-045, ISS-046, ISS-049), plus one in the stain shift (ISS-044). Corrections are written down in
 >   [post-hoc analyses](docs/posthoc_analyses.md) before they are run, and will be reported beside — never instead
 >   of — the pre-registered results.
-> - **In progress:** scoring every model under the 36 synthetic shifts, then the full pre-registered analysis.
+> - **The full pre-registered analysis is done** ([run log](docs/run_log.md)): the monitor's signal rises with harm
+>   (H1 supported); it does not rank harm better than image-difference measures that need the original tile (H2 not
+>   supported); a specific prediction about colour statistics failed (H3). As pre-registered, the monitor's alarms
+>   cannot be trusted — the next step is the corrected monitor (post-hoc P3), which awaits a decision.
 >
 > Review is welcome at any level; the [open questions](#open-questions-for-review) list where it would help most.
 
@@ -62,7 +65,7 @@ copy and builds the slide table.
 
 ## What exists today
 
-Every row is built and covered by the test suite (188 tests); "checked on real tiles" means the
+Every row is built and covered by the test suite (189 tests); "checked on real tiles" means the
 step was also run on the frozen CAMELYON17 tiles and inspected before use.
 
 | Step | Where | Checked on real tiles |
@@ -77,8 +80,8 @@ step was also run on the frozen CAMELYON17 tiles and inspected before use.
 | Uncertainty: patient-clustered bootstrap, joint across conditions; predictor comparison | `evaluation/bootstrap.py` | tests |
 | Analysis plan (pre-registration), dose-range pilot on training data | [`docs/analysis_plan.md`](docs/analysis_plan.md), `docs/pilot/` | committed before any test result |
 | Training matrix: 60 runs, resumable | `scripts/run_matrix.py` | done — real-arm results in the [run log](docs/run_log.md) |
-| Synthetic arm: every run scored under 36 shift doses | `scripts/score_synthetic.py` | running |
-| Pre-registered analysis (H1–H3, matched-dose slice, alarms, null check) | `scripts/analyse.py`, `evaluation/analysis.py` | checked end to end on fold 0, E1 |
+| Synthetic arm: every run scored under 36 shift doses | `scripts/score_synthetic.py` | done |
+| Pre-registered analysis (H1–H3, matched-dose slice, alarms, null check) | `scripts/analyse.py`, `evaluation/analysis.py` | done — [run log](docs/run_log.md) |
 | Post-hoc false-alarm checks on new patients (training tiles only) | `scripts/null_check_posthoc.py` | done — see below |
 | CycleGAN (E4), SimCLR (E6) | — | not part of the rehearsal |
 
@@ -92,6 +95,19 @@ This check caught a bug that turned every Macenko output black (ISS-041) before 
 Each synthetic shift family at the five doses (colour difference ΔE 2–10), on one training tile:
 
 ![Synthetic shifts on a real tile](docs/figures/synthetic_shifts_real_tile.png)
+
+### First results
+
+Accuracy lost under each synthetic shift (36 doses, five shift types), by stain-handling condition. Stain
+normalisation (E2, E3) removes stain harm but adds fragility to compression and striping; DANN (E5) is the most
+fragile to blur.
+
+![Dose–response](docs/figures/synthetic_dose_response.png)
+
+How well each signal ranks the 36 shifts by harm. The monitor (blue) tracks harm, but does not beat the paired
+image-difference measures (grey), which need the original tile a deployed monitor never has.
+
+![Predictor ρ](docs/figures/predictor_rho.png)
 
 ### What checking the false-alarm rate found
 
