@@ -5,11 +5,19 @@ Technology) on **label-free validity monitoring for computational pathology**: d
 when stain or scanner variation at a new site has made a deployed model's outputs
 unreliable, without needing new labels at that site.
 
-> **Status: work in progress (November 2026).** The full pipeline for the CAMELYON17
-> rehearsal is built and tested end to end — data, training of four conditions, synthetic
-> shifts, monitor features and statistics — and checked on real tiles. The
-> [analysis plan](docs/analysis_plan.md) was committed on 2 November 2026, before any test-set result
-> existed; that commit is what opens the test sets in code. See [What exists today](#what-exists-today).
+> **Status: work in progress (2 November 2026).** The CAMELYON17 rehearsal is built, tested and running.
+> The [analysis plan](docs/analysis_plan.md) was committed before any test-set result existed; that commit is
+> what opens the test sets in code. Since then:
+> - **All 60 training runs are done** (4 conditions × 5 held-out hospitals × 3 seeds). First results are in the
+>   [run log](docs/run_log.md): one held-out hospital (hospital 2) shows a measurable accuracy gap in every
+>   condition — the same hospital the WILDS benchmark uses as its hard test site.
+> - **Checking the monitor's false-alarm rate on real data found three design flaws** in the pre-registered monitor
+>   (research log ISS-045, ISS-046, ISS-049), plus one in the stain shift (ISS-044). Corrections are written down in
+>   [post-hoc analyses](docs/posthoc_analyses.md) before they are run, and will be reported beside — never instead
+>   of — the pre-registered results.
+> - **In progress:** scoring every model under the 36 synthetic shifts, then the full pre-registered analysis.
+>
+> Review is welcome at any level; the [open questions](#open-questions-for-review) list where it would help most.
 
 ## The question
 
@@ -54,7 +62,7 @@ copy and builds the slide table.
 
 ## What exists today
 
-Every row is built and covered by the test suite (173 tests); "checked on real tiles" means the
+Every row is built and covered by the test suite (188 tests); "checked on real tiles" means the
 step was also run on the frozen CAMELYON17 tiles and inspected before use.
 
 | Step | Where | Checked on real tiles |
@@ -68,6 +76,10 @@ step was also run on the frozen CAMELYON17 tiles and inspected before use.
 | Monitor Tier 1/2 statistics and alarms (with slide-level calibration) | package [`wsidrift`](https://pypi.org/project/wsidrift/) | simulation: false alarms at the set rate |
 | Uncertainty: patient-clustered bootstrap, joint across conditions; predictor comparison | `evaluation/bootstrap.py` | tests |
 | Analysis plan (pre-registration), dose-range pilot on training data | [`docs/analysis_plan.md`](docs/analysis_plan.md), `docs/pilot/` | committed before any test result |
+| Training matrix: 60 runs, resumable | `scripts/run_matrix.py` | done — real-arm results in the [run log](docs/run_log.md) |
+| Synthetic arm: every run scored under 36 shift doses | `scripts/score_synthetic.py` | running |
+| Pre-registered analysis (H1–H3, matched-dose slice, alarms, null check) | `scripts/analyse.py`, `evaluation/analysis.py` | checked end to end on fold 0, E1 |
+| Post-hoc false-alarm checks on new patients (training tiles only) | `scripts/null_check_posthoc.py` | done — see below |
 | CycleGAN (E4), SimCLR (E6) | — | not part of the rehearsal |
 
 ### Checks on real tiles
@@ -81,6 +93,32 @@ Each synthetic shift family at the five doses (colour difference ΔE 2–10), on
 
 ![Synthetic shifts on a real tile](docs/figures/synthetic_shifts_real_tile.png)
 
+### What checking the false-alarm rate found
+
+A monitor that alarms on every new batch of patients is useless, so the false-alarm rate was measured directly:
+the training patients of each fold were split into random halves (no shift at all), 200 times per fold, and every
+tier was asked whether the halves differ (target: 5%). Mean over the five folds:
+
+| Tier | Clustered by slide (pre-registered) | By patient | By patient, projection fitted on both batches |
+|---|---|---|---|
+| 1a pixel statistics | 33% | 2.6% | 2.3% |
+| 1b DenseNet-121 (primary) | 49% | 5.8% | 3.2% |
+| 1b ResNet-50 (sensitivity) | 97.5% | 54% | 4.2% |
+| 2 model response | 0.5% | 0.5% | — |
+
+Two independent faults: resampling slides when reference and deployment differ by *patient* (ISS-046), and fitting
+the feature projection on the reference alone, which no permutation test survives in high dimension (ISS-049).
+The pre-registered check had split slides of the same patients, which is why it looked calibrated. Details and the
+matched comparison of projection choices: [`docs/posthoc_analyses.md`](docs/posthoc_analyses.md) (P1–P1d).
+
+### Where the model fails
+
+The same few tumour patients are missed in every fold they appear in; their missed tiles lie inside the tumour
+outline and are scored confidently negative. Whether those tiles are tumour or enclosed non-tumour tissue awaits
+pathologist review (ISS-048).
+
+![Most-missed tumour patients](docs/figures/missed_patients_e1.png)
+
 ### How results are protected
 
 - The tiles, splits and configuration are frozen and hashed; every run verifies the hashes first.
@@ -89,6 +127,8 @@ Each synthetic shift family at the five doses (colour difference ΔE 2–10), on
   plan's commit timestamp shows it came before any test result.
 - Every problem met and every design decision is logged with its reasoning in
   [`docs/research_log.md`](docs/research_log.md).
+- Changes made after the plan are numbered [deviations](docs/deviations.md) (D1–D6, all fixed before the results
+  they affect). Analyses designed after seeing results are [specified and committed before they run](docs/posthoc_analyses.md).
 
 ### The frozen CAMELYON17 tile set
 
@@ -142,15 +182,29 @@ python scripts/train.py --tiles $OUT --runs /path/to/runs --condition E1 --holdo
 python scripts/extract_tier1.py --tiles $OUT --out /path/to/tier1 --subset train-split
 ```
 
+After the analysis plan is committed (test sets open):
+
+```bash
+python scripts/run_matrix.py        --tiles $OUT --runs /path/to/runs                 # 60 runs, resumable
+python scripts/extract_tier1_arms.py --tiles $OUT --out /path/to/tier1                # monitor features, both arms
+python scripts/score_synthetic.py   --tiles $OUT --runs /path/to/runs                 # every run × 36 doses
+python scripts/analyse.py --tiles $OUT --runs /path/to/runs --tier1 /path/to/tier1 --out /path/to/analysis
+python scripts/null_check_posthoc.py --tiles $OUT --runs /path/to/runs --tier1 /path/to/tier1 \
+    --out /path/to/null.csv [--fit-on pooled|external] [--thirds]                      # post hoc, training tiles
+```
+
 ## Repository map
 
 ```
 configs/                 tiling/QC/split settings; synthetic-shift dose table
 data/camelyon17/         record of the frozen CAMELYON17 tile set (hashes, splits, manifest)
-docs/analysis_plan.md    the analysis plan (pre-registered; changes are numbered deviations)
+docs/analysis_plan.md    the analysis plan (pre-registered)
+docs/deviations.md       numbered changes to the plan, each fixed before the results it affects
+docs/posthoc_analyses.md analyses designed after seeing results, specified before they run
+docs/run_log.md          results in the order they were obtained
 docs/pilot/              dose-range pilot results on training data
 docs/research_log.md     problems met, their causes and resolutions, and design decisions
-docs/figures/            checks on real tiles
+docs/figures/            checks on real tiles; where the model fails
 scripts/                 command-line steps (tile, split, freeze, train, calibrate shifts, extract features)
 src/stain_benchmark/     data, normalization, models, training, monitor features, evaluation
 tests/                   pytest suite
@@ -163,8 +217,15 @@ Recorded in the [analysis plan](docs/analysis_plan.md) and the research log:
 - **Dose yardstick (ISS-042).** SSIM could not put stain changes and blur on one scale; doses are matched
   by colour difference instead. Any yardstick embeds a judgement about "equal size", so the plan also
   proposes testing directly whether the monitor predicts harm better than image-difference measures.
-- **Generic-encoder tier (ISS-043).** The ImageNet ResNet-50 used for Tier 1b starts from the same
-  weights as the classifier it monitors; an alternative encoder (DenseNet-121) is ready.
+- **Generic-encoder tier (ISS-043).** The ImageNet ResNet-50 starts from the same weights as the classifier it
+  monitors, so DenseNet-121 is the primary Tier 1b encoder and ResNet-50 a sensitivity analysis.
+- **The monitor's reference (ISS-045, ISS-046, ISS-049).** Which data the reference is, how it is resampled, and what
+  the feature projection is fitted on each turned out to decide whether the monitor alarms on any new patients. Are
+  the proposed corrections (held-out reference, patient clusters, pooled or external projection) the right ones?
+- **The stain shift (ISS-044).** As pre-registered it changes each tile in a random direction, which cancels across a
+  batch; a consistent-direction version is specified as a post-hoc analysis.
+- **Hard patients (ISS-048).** Is the hospital 2 gap a site effect or a few patients? Pathologist review of the
+  contact sheet, and ΔG without each patient in turn (P4), are planned.
 - **Small rehearsal dataset (ISS-017).** 4–7 tumour patients per hospital limit what the five real
   hospitals can show; this is why the controlled synthetic arm carries the inference.
 - **TCGA task (ISS-012).** Tumour-vs-normal is confounded with frozen vs FFPE preparation.
@@ -172,11 +233,13 @@ Recorded in the [analysis plan](docs/analysis_plan.md) and the research log:
 ## Known limitations
 
 - **The monitor package on PyPI (wsidrift 0.1.1) calibrates its alarms tile by tile.** On real CAMELYON17
-  tiles with no shift (training slides split into random halves), that raised an alarm in 82–100% of cases at
-  a nominal 10%. The fix (calibrating over whole slides: 2–5% on the same check) is on wsidrift's main
-  branch and is what this repository's analysis uses; it is not yet released on PyPI (ISS-039).
-- **Validation status of the monitor.** Tier 1 has been checked on real tiles under the null; detection of
-  real harmful shifts, and Tier 2 on real data, are what the sealed experiment will test.
+  tiles with no shift, that raised an alarm in 82–100% of cases at a nominal 10% (ISS-039). Calibrating over
+  clusters is on wsidrift's main branch (unreleased) and is what this repository uses — but the cluster must be
+  the *patient* when reference and deployment are different patients (ISS-046); slide clusters hold only when the
+  same patients are on both sides.
+- **The pre-registered monitor is reported as specified, flaws included.** Its Tier 1 alarms on new patients even
+  without a shift (see the table above), and its Tier 2 reference is the model's own training tiles (ISS-045).
+  Corrected versions are reported beside it.
 - **Rehearsal scale.** CAMELYON17 has 4–7 tumour patients per hospital; see the open questions above.
 
 ## Related
