@@ -137,6 +137,21 @@ is in `test_in` when hospital 2 is a training hospital and in `test_cross` when 
 and 096 (hospital 4) are training-split patients: trained on in the folds where their hospital is a training hospital,
 scored only when it is held out.
 
+**P4 part 1 result (3 Nov).** Leaving out one tumour patient at a time moves fold ΔG within these ranges (seed-averaged
+points): hospital 0 −0.050 to −0.000; hospital 1 −0.017 to +0.067; hospital 2 +0.008 to +0.076; hospital 3 −0.041 to
++0.002; hospital 4 −0.032 to +0.052. Patient 042 is the most influential patient in 15 of 20 fold × condition cells.
+Hospital 2, the only fold with harm detected, named lines (95% patient-bootstrap interval, D5 label):
+
+| Condition | All patients | Without 042 | Without 052 | Without both |
+|---|---|---|---|---|
+| E1 | +0.043 harm | +0.014 [+0.002, +0.035] harm | +0.048 [+0.003, +0.186] harm | +0.008 [−0.000, +0.073] inconclusive |
+| E2 | +0.048 harm | +0.013 [+0.000, +0.025] harm | +0.058 [+0.001, +0.216] harm | +0.009 [−0.003, +0.042] inconclusive |
+| E3 | +0.041 harm | +0.008 [−0.001, +0.021] clean | +0.049 [−0.001, +0.198] inconclusive | +0.004 [−0.004, +0.040] inconclusive |
+| E5 | +0.024 harm | +0.024 [+0.007, +0.051] harm | +0.014 [+0.007, +0.032] harm | +0.012 [+0.003, +0.065] harm |
+
+For E1–E3 most of hospital 2's gap is patient 042 (67–80% of it) and, with 052 also removed, the gap is no longer detectable.
+For E5 the gap survives both removals. Part 2 (patients a pathologist flags) awaits the review.
+
 ## P5 · Why stain normalisation adds fragility to JPEG and striping
 
 Descriptive finding (run log, synthetic arm): stain normalisation removes stain harm but loses more accuracy than the
