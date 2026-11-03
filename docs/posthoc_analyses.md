@@ -109,6 +109,13 @@ Two changes to the monitor, made together because both concern what the referenc
 Everything else as pre-registered (D2: standardisation and PCA-50 fitted on the reference, at most 8 tiles per slide,
 α = 0.05, AND rule Tier 1b AND Tier 2, seed majority D6). Reported: reference size (patients, tiles) per fold;
 pre-registered and P3 results side by side, neither called primary for Tier 2.
+Every power figure is reported beside the same arm's realised false-alarm rate from P1–P1d, so a reader can tell a
+weak signal from a conservative alarm rule (all valid arms run below α, 0.016–0.042, because the rule splits α across
+two correlated statistics). A combined test over the two statistics is a possible later change, decided after P3.
+
+Independence of the two Tier 1 faults (P1–P1d): slide clusters false-alarm at 0.21–0.43 whatever the projection, and
+with patient clusters the reference-fitted projection fails in high dimension (ResNet-50 0.45–0.54). For the
+high-dimensional tiers both fixes are needed; for Tier 1a, which has no projection, patient clusters alone suffice.
 
 ## P4 · ΔG without individual tumour patients
 
