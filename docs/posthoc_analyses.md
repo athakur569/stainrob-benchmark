@@ -15,6 +15,7 @@ Status column: *specified* = written, not run · *run (training tiles only)* = n
 | P2 | ISS-044 | Consistent-direction stain family (`stain_batch`) | test_in tiles, shifted | awaiting decision |
 | P3 | ISS-045, ISS-046 | Held-out reference and patient clusters for every tier | test_in, test_cross | awaiting decision |
 | P4 | ISS-048 | ΔG without individual tumour patients | existing test predictions | awaiting pathologist review |
+| P5 | run log (synthetic arm) | Why stain normalisation adds fragility to JPEG and striping | test_in tiles, shifted | awaiting decision |
 
 ## P1 · Patient-split null check
 
@@ -134,3 +135,19 @@ Patient roles, for reading the results: patient 042 is a validation-split patien
 is in `test_in` when hospital 2 is a training hospital and in `test_cross` when it is held out. Patients 052 (hospital 2)
 and 096 (hospital 4) are training-split patients: trained on in the folds where their hospital is a training hospital,
 scored only when it is held out.
+
+## P5 · Why stain normalisation adds fragility to JPEG and striping
+
+Descriptive finding (run log, synthetic arm): stain normalisation removes stain harm but loses more accuracy than the
+baseline under JPEG and striping (E3 striping ΔE 25: 0.45–0.65 across folds vs E1 0.18–0.28; E2's range overlaps E1's).
+Prior work found normalisation adds little over colour augmentation (Tellez et al., *Med Image Anal* 2019; as
+summarised by career-ops); here colour augmentation is deliberately absent (DR-010), which exposes the trade-off.
+
+Hypothesis: the normalisers read the incoming tile — Macenko estimates its stain vectors and concentrations, Reinhard
+its colour mean and SD — so a shift that corrupts those statistics is amplified by the step meant to remove variation.
+The reference (DR-013) is fixed and is not the issue.
+
+Test: for E2 and E3, at the JPEG and striping doses, score `test_in` twice — (a) as pre-registered (statistics
+estimated from the shifted tile); (b) with the tile's statistics estimated from its **clean** version and that transform
+applied to the shifted tile. ΔG(a) − ΔG(b) is the harm attributable to corrupted estimation. Same models, tiles,
+bootstrap. Descriptive; no between-condition test.
