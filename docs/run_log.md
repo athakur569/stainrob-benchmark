@@ -72,3 +72,78 @@ labelled by the D5 rule (fixed before folds 1–4 were scored).
   than tiles fully inside (20.7%), a modest partial-label effect. The four most-missed patients' tiles are almost
   entirely inside the outline (median 0.99–1.0), so edge effects do not explain them. Several tumour patients
   contribute only 1–7 tiles, all from micrometastasis or ITC slides.
+
+## 2 Nov 2026 · Full pre-registered analysis (all folds × E1, E2, E3, E5)
+
+Run under plan `927e44b` with deviations D1–D7; 2,000 patient-bootstrap resamples, 200 permutations; output
+`analysis_v1`. The first attempt stopped on an undefined calibration slope (ISS-050, D7) and was rerun from scratch.
+The monitor here is the **pre-registered** one, with the flaws found since (ISS-044, -045, -046, -049) still in it.
+
+### Synthetic arm: how much accuracy each shift costs
+
+![Dose–response](figures/synthetic_dose_response.png)
+
+- Within every family, harm rises with dose. Blur is the most harmful per unit of colour difference; stain the least.
+- **Stain normalisation removes stain harm and adds fragility elsewhere.** At ΔE 12, stain costs E1 0.080 AUROC but
+  E2 0.011 and E3 0.025. At high doses, E2 and E3 lose more than E1 to JPEG (ΔE 15: 0.41 and 0.49 vs 0.31) and E3
+  far more to striping (ΔE 25: 0.57 vs 0.24).
+- **DANN (E5) is the most fragile to blur:** 0.54 at ΔE 10 vs 0.36 for E1. These are descriptions; the plan does not
+  test differences between conditions.
+
+### H1 — the monitor's signal rises with harm: supported
+
+![Predictor ρ](figures/predictor_rho.png)
+
+Spearman ρ between signal and ΔG over the 36 shifts, per fold and condition, one-sided 95% lower bound > 0:
+Tier 1b (DenseNet-121) in **20 of 20** cells (ρ 0.53–0.92); Tier 2 in **19 of 20** (ρ 0.12–0.71; the exception is
+fold 3, E3: ρ 0.12, lower bound −0.03).
+
+### H2 — the monitor ranks harm better than image-difference measures: not supported
+
+Differences in ρ (monitor − baseline), 95% joint-bootstrap intervals, all 36 shifts:
+- **Tier 2** ranks harm worse than ΔE in most cells (interval below 0 in 15 of 20) and worse than 1 − SSIM in all 20.
+- **Tier 1b** vs ΔE depends on the condition: better for the normalised conditions (E2, E3: interval above 0 in 5 of
+  10 cells, never below) and worse for E1 and E5 (below 0 in 7 of 10). Vs 1 − SSIM it is at or slightly below in every
+  cell (differences −0.10 to +0.01; below 0 in 14 of 20).
+- By the plan's rule (§10) this counts against H2 for Tier 2, and for Tier 1b against 1 − SSIM. Context the plan
+  stated in advance: ΔE and SSIM are *paired* measures that need the original, unshifted tile, which a deployed monitor
+  never has. Tier 1b comes within 0.10 of them without it; it does not beat them.
+- Matched-dose slice (D1), family pairs ordered as harm orders them, of 10, averaged over folds and doses: 1 − SSIM
+  5.8–8.0, Tier 1a 6.1–7.5, Tier 1b 5.5–7.7, Tier 2 5.2–5.8, ΔE 4.8–5.4 (by construction ΔE is nearly tied at a matched dose).
+
+### H3 — Tier 1a over-weights stain: fails
+
+The prediction had three parts. (1) Tier 1a rises with stain dose: ρ 0.43 (fold 0), 0.89 (folds 1–2), 1.00 (folds
+3–4) — monotone in two folds only. (2) Stain harm is small relative to blur: holds (E1: stain ΔG 10–27% of blur's
+at ΔE 4–10). (3) Tier 1a ranks harm worse than Tier 1b and Tier 2: **fails** — for E1 and E5 Tier 1a's ρ is higher
+than Tier 1b's in every fold and higher than Tier 2's in all but one cell. The likely reason is ISS-044: the stain
+family as built moves each tile in a random direction, so a batch barely changes and Tier 1a has little stain signal
+to over-weight. Reported as a failed prediction; the consistent-direction stain family (P2) is the test of the idea.
+
+### Alarms
+
+- **Realised false-alarm rate (§9.7, the pre-registered slide-split null):** Tier 1a 0.010–0.035, Tier 2 0.000–0.010
+  (both within α = 0.05); **Tier 1b 0.05 (fold 0), 0.08–0.115 (folds 1–4).** With 200 splits the simulation error is
+  about 0.015, so by the plan's own rule Tier 1b is **miscalibrated in folds 1–4 and its alarms there are not
+  interpreted**. (On splits by patient it is far worse: post-hoc P1.)
+- **Unshifted in-domain batch (no shift):** Tier 1a and Tier 1b (DenseNet-121) silent in 5 of 5 folds; Tier 1b
+  ResNet-50 alarmed in fold 0. Tier 2 alarmed in 6, 8, 5 and 0 of 15 seed-fold cells for E1, E2, E3, E5 — the
+  training-tile reference at work (ISS-045).
+- **Synthetic shifts:** Tier 1a and 1b flag every blur, clipped, JPEG and striping dose from ΔE 4 up (and most at ΔE 2),
+  including doses that cost almost nothing (clipped up to ΔE 10: ΔG ≤ 0.005); stain only at ΔE ≥ 10. Tier 2 flags in
+  proportion to harm more than to dose (blur 10% → 95% of cells from ΔE 2 to 10), on top of its false alarms above.
+- **Real arm** (descriptive; five hospitals): Tier 1a and 1b alarmed on every held-out hospital in every condition.
+  The AND rule (Tier 1b AND Tier 2, seed majority), scored by D5: hospital 2 (harm) — detection in 4 of 4 conditions;
+  hospitals 0 and 3 (clean) — silent in 8 of 8; hospital 1 (clean) — false alarm in 3 of 3 scored (E2 ambiguous);
+  hospital 4 — ambiguous in all four. Tier 1b is always on, so the rule is Tier 2 alone in practice.
+
+### Secondary and notes
+
+- **Calibration-slope ΔG** is far noisier than AUROC, as the pilot predicted: real-arm intervals span roughly ±0.4 to
+  ±1. Some synthetic cells have no defined slope in any resample (D7): the in-domain scores separate perfectly.
+- 1 of 240 ρ estimates lies just above its own percentile interval (resampling ΔG adds noise, which pulls resampled ρ
+  down); intervals for ρ are read as approximate.
+- **What this means for the next step:** the monitor's continuous signal tracks harm (H1), but as pre-registered it
+  neither beats paired image measures (H2) nor gives alarms that can be trusted (§9.7, P1). The post-hoc corrections
+  (P3: held-out reference, patient clusters, pooled or external projection) are the analysis that decides whether a
+  corrected monitor's alarms carry information. They wait for Abhi's decision.
