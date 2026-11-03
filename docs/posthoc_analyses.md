@@ -119,6 +119,13 @@ Independence of the two Tier 1 faults (P1–P1d): slide clusters false-alarm at 
 with patient clusters the reference-fitted projection fails in high dimension (ResNet-50 0.45–0.54). For the
 high-dimensional tiers both fixes are needed; for Tier 1a, which has no projection, patient clusters alone suffice.
 
+**Reading rule for P3's real arm (added 3 Nov before P3 ran; raised by career-ops).** The two hospitals with the
+largest drops (2 and 4) are also the two with different scanners, and their drops are carried by a few patients whose
+misses persist even when their hospital is in training (P4; patient 042). So a site alarm is credited as tracking harm
+only if that site's harm survives removing its influential patients (P4: 042/052 at hospital 2, 096/092 at hospital 4).
+If the harm vanishes without them while the alarm remains, the alarm is reported as tracking appearance, not harm.
+With five hospitals this is a description, not a test.
+
 ## P4 · ΔG without individual tumour patients
 
 Some tumour patients are missed in every fold they appear in (ISS-048); with 4–7 tumour patients per held-out hospital
