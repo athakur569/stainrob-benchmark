@@ -48,9 +48,12 @@ labelled by the D5 rule (fixed before folds 1–4 were scored).
 | 3 | 13 / 6 | −0.029 [−0.059, +0.007] clean | −0.018 [−0.067, +0.007] clean | −0.020 [−0.076, +0.008] clean | −0.012 [−0.041, +0.005] clean |
 | 4 | 15 / 4 | +0.008 [−0.043, +0.054] inconclusive | −0.011 [−0.084, +0.044] inconclusive | +0.015 [−0.089, +0.104] inconclusive | −0.004 [−0.056, +0.036] inconclusive |
 
-- **Hospital 2 is the one measurable gap, and every condition shows it.** It is the same hospital that WILDS
-  (Koh et al. 2021) uses as its held-out test site; that is an observation, not independent validation — WILDS used
-  the full CAMELYON17 patch set, and the reason it chose that hospital has not been checked here. **Revised 3 Nov
+- **Hospital 2 is the one measurable gap, and every condition shows it.** WILDS (Koh et al. 2021) holds out the
+  same centre as its test split — checked in the WILDS source: `TEST_CENTER = 2` on a 0–4 scale; the paper relabels it
+  "hospital 5" — assuming WILDS's centre IDs follow CAMELYON17's official numbering (consistent with patient 042 being
+  centre 2; not checked against WILDS's metadata file). WILDS chose that hospital because its patches were "the most
+  visually distinctive" (WILDS appendix, as read by career-ops), not because models fail there. It is an observation,
+  not independent validation: WILDS used the full patch set, and selected on appearance, not harm. **Revised 3 Nov
   (post-hoc P4):** for E1–E3, 67–80% of this gap is one patient (042), and with patients 042 and 052 removed it is
   no longer detectable; only E5's gap survives both removals. So the hospital 2 finding depends on the pathologist
   review of those patients (ISS-048). Struck: an earlier line here said DANN had the smallest gap. Removing patient
