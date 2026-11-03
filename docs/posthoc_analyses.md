@@ -196,3 +196,9 @@ stain, the deployed normaliser removes most of the shift (d_norm / d_oracle: fea
   the image as a generic encoder sees it. The remaining candidate is the model-difference term: models trained on
   normalised tiles respond differently to the artefact. Caveat: distance in a generic ImageNet encoder is not what the
   trained classifier attends to; P5's model arms (test tiles, awaiting decision) measure the ΔG side directly.
+- The negative is informative in itself: a plausible explanation (a normaliser fed a damaged tile estimates damaged
+  statistics) is ruled out cheaply. JPEG's pixel-space amplification is largest at the mildest dose in every fold
+  (E3 1.95 at ΔE 2, fold range 1.44–2.08; 1.36 at ΔE 10; 1.51 at ΔE 15) — not monotone; noted, not interpreted.
+- Open and **untested** (career-ops): models trained on normalised tiles have less colour signal and may lean on
+  structure, which would make them more exposed to structural artefacts. Not adopted; a test would compare reliance on
+  texture between E1 and E2/E3 (the saliency work of Paper 3), not part of this rehearsal.
