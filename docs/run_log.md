@@ -183,3 +183,15 @@ seed-averaged; this metric was not pre-registered and was examined before this e
   measure of the harm that matters clinically here (missed tumour in a few patients). For the paper, ΔG(AUROC) as the
   primary outcome understates this; a threshold-based or patient-level outcome would show it. Noted for 0.2.0.
 - Output: `posthoc/accuracy_at_half.csv`.
+- **The pre-registered alarms read against both outcomes (exploratory second reading; D5 scoring stands).** Hospital 4
+  was labelled "inconclusive" on ΔG(AUROC) in all four conditions, so D5 scored its alarms as ambiguous. Against the
+  accuracy drop, the AND rule (in practice Tier 2) alarmed in all 3 seeds for E1 and E3 — the two largest drops (21 and
+  29 points) — in 1 of 3 for E2 (11 points) and in none for E5 (7 points). Hospital 1's alarms (E1, E3, E5) remain
+  false under both readings (no accuracy drop); hospitals 0 and 3 silent with no drop under both; hospital 2 alarmed
+  with drops of 4–18 points. Caveats: this is the pre-registered Tier 2 with the training-tile reference (ISS-045),
+  which also alarms on unshifted in-domain batches; the accuracy drops are driven by a few patients; and 0.5 is an
+  arbitrary operating point. The numbers depend on the threshold, the phenomenon does not: any deployed threshold can
+  have a patient's tumour pushed below it by a change that preserves ranking.
+- **Clinically:** at hospital 4 the primary outcome reported no detectable harm (AUROC gap 0.008) while the model, for
+  one patient, scored 89% of tumour tiles below the threshold with specificity intact — silent false negatives in a
+  specific patient, with the aggregate reporting nothing wrong.
