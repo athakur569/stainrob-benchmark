@@ -12,8 +12,8 @@ Status column: *specified* = written, not run · *run (training tiles only)* = n
 | ID | Addresses | What | Data it reads | Status |
 |---|---|---|---|---|
 | P1 | ISS-046, ISS-049 | Patient-split null check (P1–P1d: clusters × projection source) | training tiles only | run (training tiles only) |
-| P2 | ISS-044 | Consistent-direction stain family (`stain_batch`) | test_in tiles, shifted | approved 3 Nov; running |
-| P3 | ISS-045, ISS-046 | Held-out reference and patient clusters for every tier | test_in, test_cross | approved 3 Nov |
+| P2 | ISS-044 | Consistent-direction stain family (`stain_batch`) | test_in tiles, shifted | run 3 Nov |
+| P3 | ISS-045, ISS-046 | Held-out reference and patient clusters for every tier | test_in, test_cross | run 3 Nov |
 | P4 | ISS-048 | ΔG without individual tumour patients | existing test predictions | part 1 approved 3 Nov; part 2 awaits pathologist review |
 | P5 | run log (synthetic arm) | Why stain normalisation adds fragility to JPEG and striping | test_in tiles, shifted | approved 3 Nov |
 | P5b | P5 | Does the normaliser itself amplify artefacts? (no model, no labels) | training-split calibration tiles only | run — estimation corruption not supported |
@@ -91,6 +91,13 @@ Commands: `scripts/score_synthetic.py --doses <that file> --tag stain_batch`, an
 Reported: ΔG and every tier's signal per dose, next to the pre-registered `stain` family. H3 is **not** re-tested
 with it; it is a description of how the monitor responds to a batch-level stain drift.
 
+**P2 result (3 Nov).** Consistent over-staining costs nothing: ΔG −0.009 to −0.001 at every dose up to ΔE 12 in every
+condition; harm is never detected (blur at ΔE 10 costs E1 0.36). The corrected monitor (P3 settings, half-batches)
+alarms on it as follows — Tier 1a (external projection): 0% at ΔE 2, 4% at 4, 16% at 6, 32% at 8, 64% at 10, 90% at 12;
+Tier 1b DenseNet-121: 2–30%; ResNet-50: ≤ 6%; Tier 2: about 0% for E2, E3, E5 (E1 18–32%, on a 12% false-alarm base).
+So with a batch-level stain drift, the idea behind H3 holds descriptively: pixel statistics alarm on harmless stain
+change, the deeper tiers far less. The pre-registered H3 stays failed as specified.
+
 ## P3 · Held-out reference, patient clusters
 
 Two changes to the monitor, made together because both concern what the reference is and how it is resampled:
@@ -111,6 +118,28 @@ Two changes to the monitor, made together because both concern what the referenc
 Everything else as pre-registered (D2: standardisation and PCA-50 fitted on the reference, at most 8 tiles per slide,
 α = 0.05, AND rule Tier 1b AND Tier 2, seed majority D6). Reported: reference size (patients, tiles) per fold;
 pre-registered and P3 results side by side, neither called primary for Tier 2.
+
+**P3 result (3 Nov; 10 halvings × 5 folds; reference about 15 patients per half for the synthetic arm, 31–33 patients /
+904–984 tiles for the real arm).**
+
+| Arm (E1–E5 range) | False alarm, unshifted half | Power on harm doses | Alarm on clean doses | ρ with ΔG (median over folds) |
+|---|---|---|---|---|
+| Tier 1a, external | 0.00 | 0.70–0.81 | 0.16–0.24 | 0.68–0.82 |
+| Tier 1a, pooled | 0.00 | 0.65–0.74 | 0.15–0.21 | 0.57–0.75 |
+| Tier 1b DenseNet-121, external | 0.02 | 0.81–0.95 | 0.33–0.49 | 0.64–0.87 |
+| Tier 1b DenseNet-121, pooled | 0.02 | 0.81–0.95 | 0.35–0.51 | 0.65–0.88 |
+| Tier 1b ResNet-50, external | 0.00 | 0.76–0.92 | 0.26–0.41 | 0.52–0.75 |
+| Tier 2 (held-out reference) | 0.02–0.12 | 0.45–0.60 | 0.10–0.30 | 0.17–0.39 |
+
+- Projection: external and pooled both hold α; external has slightly more power in every Tier 1 cell → named, as
+  pre-specified. Tier 2 with the held-out reference is above α for E1 (0.12) and ranks harm worse than the
+  pre-registered Tier 2 did.
+- Every corrected tier still alarms on a sizeable share of doses that cause no detectable harm (magnitude without harm).
+- **Real arm:** corrected Tier 1 alarms at every held-out hospital, every tier and projection; MMD² largest at
+  hospitals 2 and 4 (the two other scanners). Under the reading rule fixed before P3 ran, the alarms at 0, 1 and 3
+  (no harm) and at 2 and 4 (harm largely vanishing without the influential patients, P4) are reported as tracking
+  appearance, not harm — except E5 at hospital 2, whose harm survives. Corrected Tier 2: silent at 0 and 3; alarms at
+  2 (all conditions), at 4 for E1 and E3 only (the 21- and 29-point accuracy drops), and at 1 for E2 and E3 (false).
 Every power figure is reported beside the same arm's realised false-alarm rate from P1–P1d, so a reader can tell a
 weak signal from a conservative alarm rule (all valid arms run below α, 0.016–0.042, because the rule splits α across
 two correlated statistics). A combined test over the two statistics is a possible later change, decided after P3.

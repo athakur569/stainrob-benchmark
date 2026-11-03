@@ -199,3 +199,15 @@ seed-averaged; this metric was not pre-registered and was examined before this e
   tile-level AUROC loss" is what was tested, not "the monitor tracks harm": the pre-registered results support the first
   claim only, and the results paper must keep the two apart. Redefining the outcome (per-patient sensitivity at an
   operating threshold, or slide/case-level detection) means the synthetic arm is the main thing the next version re-runs.
+
+## 3 Nov 2026 · Post-hoc P2 and P3 (approved by Abhi 3 Nov; specified beforehand)
+
+- **P2 — consistent over-staining is harmless and pixel statistics alarm on it.** ΔG −0.009 to −0.001 up to ΔE 12 in
+  every condition (never harm); Tier 1a alarms rise from 0% (ΔE 2) to 90% (ΔE 12), DenseNet-121 to 30%, Tier 2 ≈ 0% for
+  E2/E3/E5. With a batch-level stain drift, the idea behind H3 holds descriptively; the pre-registered H3 stays failed.
+- **P3 — the corrected monitor.** All corrected Tier 1 arms hold α on unshifted half-batches (0–2%) and detect 65–95%
+  of harmful synthetic doses, but also alarm on 15–51% of harmless ones. Tier 2 with a held-out reference has less
+  power (45–60%) and ranks harm worse (ρ 0.17–0.39). On the real arm, corrected Tier 1 alarms at every held-out
+  hospital — the hospitals genuinely differ in appearance (strongest at hospitals 2 and 4, the other scanners) — and,
+  by the reading rule fixed beforehand, those alarms track appearance rather than harm (exception: E5 at hospital 2).
+- Details and tables: `docs/posthoc_analyses.md`, P2 and P3.
