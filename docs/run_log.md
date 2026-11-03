@@ -146,3 +146,11 @@ to over-weight. Reported as a failed prediction; the consistent-direction stain 
   neither beats paired image measures (H2) nor gives alarms that can be trusted (§9.7, P1). The post-hoc corrections
   (P3: held-out reference, patient clusters, pooled or external projection) are the analysis that decides whether a
   corrected monitor's alarms carry information. They wait for Abhi's decision.
+
+## 2 Nov 2026 (late) · Post-hoc P5b — does the stain normaliser itself amplify artefacts?
+
+Training-split calibration tiles only; no model, no labels (`docs/posthoc_analyses.md`, P5b). The normaliser does not
+read corrupted statistics in a way that matters (estimation ratio ≈ 1 for JPEG and striping), and it amplifies the
+artefacts only modestly as a generic encoder sees them (JPEG up to 1.4×, striping ≤ 1.1×). The mechanism proposed for
+the normalisers' extra fragility is therefore not supported; the fragility most likely lies in how models trained on
+normalised tiles respond to the artefact, which P5's model arms would test.

@@ -16,7 +16,7 @@ Status column: *specified* = written, not run · *run (training tiles only)* = n
 | P3 | ISS-045, ISS-046 | Held-out reference and patient clusters for every tier | test_in, test_cross | awaiting decision |
 | P4 | ISS-048 | ΔG without individual tumour patients | existing test predictions | awaiting pathologist review |
 | P5 | run log (synthetic arm) | Why stain normalisation adds fragility to JPEG and striping | test_in tiles, shifted | awaiting decision |
-| P5b | P5 | Does the normaliser itself amplify artefacts? (no model, no labels) | training-split calibration tiles only | run (training tiles only) |
+| P5b | P5 | Does the normaliser itself amplify artefacts? (no model, no labels) | training-split calibration tiles only | run — estimation corruption not supported |
 
 ## P1 · Patient-split null check
 
@@ -183,3 +183,16 @@ with dose are evidence of amplification at that stage. Limitation: a larger feat
 itself; it corroborates, and P5's model arms give the ΔG side. The two spaces (raw vs normalised) differ in distribution,
 so d_oracle / d_raw compares distances across spaces; the stain family, which normalisation should shrink, is the
 built-in check that the ratio moves in the expected direction.
+
+**P5b result (100 calibration tiles × 5 folds; median over tiles, range over folds).** Built-in check passes: for
+stain, the deployed normaliser removes most of the shift (d_norm / d_oracle: feature 0.51–0.77, pixel 0.25–0.48).
+- **Estimation corruption is negligible for the families where normalisation adds fragility:** d_norm / d_oracle in
+  feature space 0.97–1.05 (JPEG) and 0.90–1.14 (striping), for both normalisers. The hypothesis that P5 was written to
+  test — the normaliser amplifies harm because it reads corrupted statistics — is **not supported** at the
+  representation level.
+- **Transform amplification is modest:** JPEG 1.04–1.40 (E3) and 1.02–1.20 (E2) in feature space, largest at mild
+  doses (pixels 1.2–1.95); striping 0.97–1.11; blur 0.92–1.07; clipped 1.01–1.07.
+- So the large striping fragility of E3 (ΔG 0.57 vs 0.24 at ΔE 25) is not explained by what the normaliser does to
+  the image as a generic encoder sees it. The remaining candidate is the model-difference term: models trained on
+  normalised tiles respond differently to the artefact. Caveat: distance in a generic ImageNet encoder is not what the
+  trained classifier attends to; P5's model arms (test tiles, awaiting decision) measure the ΔG side directly.
