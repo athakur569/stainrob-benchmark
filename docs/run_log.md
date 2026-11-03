@@ -165,3 +165,21 @@ read corrupted statistics in a way that matters (estimation ratio ≈ 1 for JPEG
 artefacts only modestly as a generic encoder sees them (JPEG up to 1.4×, striping ≤ 1.1×). The mechanism proposed for
 the normalisers' extra fragility is therefore not supported; the fragility most likely lies in how models trained on
 normalised tiles respond to the artefact, which P5's model arms would test.
+
+## 3 Nov 2026 · Exploratory (not specified in advance): accuracy at the 0.5 threshold
+
+Prompted by the WILDS comparison: WILDS's baseline loses 23 points of accuracy at hospital 2 (93.2 → 70.3; DenseNet-121
+from scratch, 96 px patches) while our AUROC gap there is 0.043. Computed from the existing predictions; descriptive,
+seed-averaged; this metric was not pre-registered and was examined before this entry was written.
+
+- **Accuracy at 0.5 collapses where AUROC barely moves.** E1: hospital 2, 0.945 → 0.760 (18.5 points); hospital 4,
+  0.935 → 0.724 (21 points) while its AUROC gap is 0.008 ("inconclusive"); E3 hospital 4, 29 points. WILDS-sized.
+- **It is all sensitivity:** specificity stays at 0.96–1.00; tumour tiles are missed, normals are not flagged.
+- **It is the same few patients:** without 096 and 092 the hospital 4 drop vanishes (E1 21 → −2 points; E3 29 → 4);
+  without 042 and 052 hospital 2's shrinks (E1 18.5 → 5); E5 keeps more (17.6 → 8.5).
+- **Why AUROC does not see it:** the missed tumour tiles are scored low but still above normal tissue — at hospital 4
+  (E1, seed 42) normal tiles' median score is 0.012, patient 096's tumour tiles' 0.094, and 98% of its missed tiles
+  score above the median normal tile. Ranking survives; the threshold does not. Tile-level AUROC is therefore a weak
+  measure of the harm that matters clinically here (missed tumour in a few patients). For the paper, ΔG(AUROC) as the
+  primary outcome understates this; a threshold-based or patient-level outcome would show it. Noted for 0.2.0.
+- Output: `posthoc/accuracy_at_half.csv`.
