@@ -151,3 +151,15 @@ Test: for E2 and E3, at the JPEG and striping doses, score `test_in` twice — (
 estimated from the shifted tile); (b) with the tile's statistics estimated from its **clean** version and that transform
 applied to the shifted tile. ΔG(a) − ΔG(b) is the harm attributable to corrupted estimation. Same models, tiles,
 bootstrap. Descriptive; no between-condition test.
+
+Arm (b) is an **oracle** condition: no laboratory has the clean version of a damaged tile, and applying a transform
+estimated on one image to another is a counterfactual, not a deployable configuration. It is used only to separate
+mechanisms.
+
+Decomposition (raised by career-ops; E1's values already exist, so this is arithmetic):
+- ΔG(E1) — the artefact's damage with no normaliser;
+- ΔG(a) − ΔG(b) — **estimation corruption** (same model; only the estimate differs): fixable in principle (robust
+  estimation, estimating on QC-passed tiles);
+- ΔG(b) − ΔG(E1) — **transform amplification plus model difference**: E2/E3 models were trained on normalised tiles
+  and E1's on raw tiles, so this term mixes what the transform does to the artefact with how the two models differ.
+  It cannot be read as pure amplification, and is reported with that label.
