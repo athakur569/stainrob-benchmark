@@ -139,21 +139,26 @@ class MacenkoNormalizer(StainNormalizer):
 
         return self
 
-    def transform(self, image: np.ndarray) -> np.ndarray:
+    def transform(self, image: np.ndarray, source: np.ndarray | None = None) -> np.ndarray:
         """
         Normalize image to match reference stain appearance.
 
         Args:
             image: RGB image to normalize (H, W, 3), dtype uint8.
+            source: image whose stain matrix and stain amounts are estimated (default: ``image``).
+                Only the post-hoc oracle analysis (P5) passes another image — e.g. the clean version
+                of a shifted tile — to separate estimation from transformation.
 
         Returns:
             Normalized RGB image (H, W, 3), dtype uint8.
         """
         self._check_fitted()
         self._validate_image(image)
+        if source is not None:
+            self._validate_image(source)
 
         # Get source stain matrix and concentrations
-        stain_matrix_src, max_c_src = self._get_stain_matrix(image)
+        stain_matrix_src, max_c_src = self._get_stain_matrix(image if source is None else source)
 
         # Get stain concentrations for each pixel
         concentrations = self._get_concentrations(image, stain_matrix_src)

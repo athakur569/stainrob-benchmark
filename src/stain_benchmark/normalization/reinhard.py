@@ -169,21 +169,25 @@ class ReinhardNormalizer(StainNormalizer):
 
         return self
 
-    def transform(self, image: np.ndarray) -> np.ndarray:
+    def transform(self, image: np.ndarray, source: np.ndarray | None = None) -> np.ndarray:
         """
         Normalize image to match reference color statistics.
 
         Args:
             image: RGB image to normalize (H, W, 3), dtype uint8.
+            source: image whose LAB mean and SD are used (default: ``image``). Only the post-hoc
+                oracle analysis (P5) passes another image, e.g. the clean version of a shifted tile.
 
         Returns:
             Normalized RGB image (H, W, 3), dtype uint8.
         """
         self._check_fitted()
         self._validate_image(image)
+        if source is not None:
+            self._validate_image(source)
 
         # Compute source statistics
-        src_stats = self._compute_stats(image)
+        src_stats = self._compute_stats(image if source is None else source)
 
         lab = _rgb_to_lab(image)
         L, a, b = cv2.split(lab)

@@ -97,3 +97,15 @@ def test_macenko_preserves_brightness_with_background():
     assert out.shape == src.shape
     assert abs(float(out.mean()) - float(src.mean())) < 40
     assert out[:, : src.shape[1] // 3].mean() > 200     # background stays light
+
+
+@pytest.mark.parametrize("cls", [ReinhardNormalizer, MacenkoNormalizer])
+def test_source_defaults_to_the_image_and_changes_what_is_estimated(cls):
+    """P5 oracle: statistics can be estimated on another image (e.g. the clean version of a shifted tile)."""
+    n = cls().fit(REF)
+    assert np.array_equal(n.transform(OTHER), n.transform(OTHER, source=OTHER))      # default unchanged
+    darker = (OTHER.astype(float) * 0.7).astype(np.uint8)                            # a "shifted" OTHER
+    own, oracle = n.transform(darker), n.transform(darker, source=OTHER)
+    assert not np.array_equal(own, oracle)
+    # estimating on the shifted tile itself pulls its colour back to the reference; the oracle keeps the darkening
+    assert oracle.mean() < own.mean()
