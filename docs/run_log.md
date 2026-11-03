@@ -51,9 +51,13 @@ labelled by the D5 rule (fixed before folds 1–4 were scored).
 - **Hospital 2 is the one measurable gap, and every condition shows it.** WILDS (Koh et al. 2021) holds out the
   same centre as its test split — checked in the WILDS source: `TEST_CENTER = 2` on a 0–4 scale; the paper relabels it
   "hospital 5" — assuming WILDS's centre IDs follow CAMELYON17's official numbering (consistent with patient 042 being
-  centre 2; not checked against WILDS's metadata file). WILDS chose that hospital because its patches were "the most
-  visually distinctive" (WILDS appendix, as read by career-ops), not because models fail there. It is an observation,
-  not independent validation: WILDS used the full patch set, and selected on appearance, not harm. **Revised 3 Nov
+  centre 2; not checked against WILDS's metadata file). WILDS chose that hospital "because its patches were the most
+  visually distinctive" (verified in the paper's source, arXiv 2012.07421v3, Camelyon17 appendix); its baseline model
+  then scores 70.3% (SD 6.4) there against 93.2% in-distribution. It is an observation, not independent validation:
+  WILDS used the full patch set and selected on appearance, not on harm. Our own data argue that hospital 2's gap here
+  is not caused by its appearance: patient 042, who carries most of it, is missed in every fold — including the four
+  in which hospital 2 is a training hospital — so training on that hospital's appearance does not fix it. With 4–7
+  tumour patients per hospital this is an observation about structure, not a test. **Revised 3 Nov
   (post-hoc P4):** for E1–E3, 67–80% of this gap is one patient (042), and with patients 042 and 052 removed it is
   no longer detectable; only E5's gap survives both removals. So the hospital 2 finding depends on the pathologist
   review of those patients (ISS-048). Struck: an earlier line here said DANN had the smallest gap. Removing patient
