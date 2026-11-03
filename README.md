@@ -10,7 +10,8 @@ unreliable, without needing new labels at that site.
 > what opens the test sets in code. Since then:
 > - **All 60 training runs are done** (4 conditions × 5 held-out hospitals × 3 seeds). First results are in the
 >   [run log](docs/run_log.md): one held-out hospital (hospital 2) shows a measurable accuracy gap in every
->   condition — the same hospital the WILDS benchmark uses as its hard test site.
+>   condition (the hospital the WILDS benchmark holds out as its test site). Most of that gap turns out to be
+>   one patient whose tumour tiles the model misses; pathologist review of that patient is pending.
 > - **Checking the monitor's false-alarm rate on real data found three design flaws** in the pre-registered monitor
 >   (research log ISS-045, ISS-046, ISS-049), plus one in the stain shift (ISS-044). Corrections are written down in
 >   [post-hoc analyses](docs/posthoc_analyses.md) before they are run, and will be reported beside — never instead

@@ -48,10 +48,14 @@ labelled by the D5 rule (fixed before folds 1–4 were scored).
 | 3 | 13 / 6 | −0.029 [−0.059, +0.007] clean | −0.018 [−0.067, +0.007] clean | −0.020 [−0.076, +0.008] clean | −0.012 [−0.041, +0.005] clean |
 | 4 | 15 / 4 | +0.008 [−0.043, +0.054] inconclusive | −0.011 [−0.084, +0.044] inconclusive | +0.015 [−0.089, +0.104] inconclusive | −0.004 [−0.056, +0.036] inconclusive |
 
-- **Hospital 2 is the one measurable gap, and every condition shows it.** This agrees with WILDS (Koh et al. 2021),
-  which holds out the same hospital as its test site because models drop there. DANN has the smallest gap
-  (0.024) and the narrowest interval. The intervals overlap, and three seeds cannot separate "DANN reduces the gap"
-  from "DANN varies less", so this is a direction, not a claim that DANN is better.
+- **Hospital 2 is the one measurable gap, and every condition shows it.** It is the same hospital that WILDS
+  (Koh et al. 2021) uses as its held-out test site; that is an observation, not independent validation — WILDS used
+  the full CAMELYON17 patch set, and the reason it chose that hospital has not been checked here. **Revised 3 Nov
+  (post-hoc P4):** for E1–E3, 67–80% of this gap is one patient (042), and with patients 042 and 052 removed it is
+  no longer detectable; only E5's gap survives both removals. So the hospital 2 finding depends on the pathologist
+  review of those patients (ISS-048). Struck: an earlier line here said DANN had the smallest gap. Removing patient
+  042 reverses the order (E1 0.014 [0.002, 0.035], E5 0.024 [0.007, 0.051]); the intervals overlap with or without
+  the patient, so no ordering of the conditions is supported either way.
 - **In-domain AUROC is high everywhere** (0.96–0.997). The ceiling contingency (§11) is checked on fold 0 only, by
   design, and did not fire there (0.974); in folds 1 and 2 E1 averages 0.985 and 0.996, so the real arm has little
   headroom in those folds. This supports the plan's choice to make the synthetic arm the controlled evidence.
