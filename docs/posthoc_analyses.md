@@ -16,6 +16,7 @@ Status column: *specified* = written, not run · *run (training tiles only)* = n
 | P3 | ISS-045, ISS-046 | Held-out reference and patient clusters for every tier | test_in, test_cross | awaiting decision |
 | P4 | ISS-048 | ΔG without individual tumour patients | existing test predictions | awaiting pathologist review |
 | P5 | run log (synthetic arm) | Why stain normalisation adds fragility to JPEG and striping | test_in tiles, shifted | awaiting decision |
+| P5b | P5 | Does the normaliser itself amplify artefacts? (no model, no labels) | training-split calibration tiles only | run (training tiles only) |
 
 ## P1 · Patient-split null check
 
@@ -163,3 +164,22 @@ Decomposition (raised by career-ops; E1's values already exist, so this is arith
 - ΔG(b) − ΔG(E1) — **transform amplification plus model difference**: E2/E3 models were trained on normalised tiles
   and E1's on raw tiles, so this term mixes what the transform does to the artefact with how the two models differ.
   It cannot be read as pure amplification, and is reported with that label.
+
+### P5b · Amplification measured on the normaliser itself (raised by career-ops)
+
+Whether a normaliser magnifies an artefact is a property of the function N, not of any classifier, so it can be measured
+without a trained model, without labels, and on the **training-split calibration sample** already used to fix the dose
+table (100 tiles; no test tile is read). For each fold's E2 and E3 normaliser (DR-013 references), each family and dose,
+and each tile x with shifted version x′, three distances, in pixels (RMS, RGB) and in the frozen DenseNet-121 feature
+space of Tier 1b (Euclidean):
+
+- d_raw = d(x, x′) — the artefact with no normaliser;
+- d_oracle = d(N_x(x), N_x(x′)) — the transform with its statistics estimated on the clean tile (oracle; counterfactual);
+- d_norm = d(N_x(x), N_x′(x′)) — the pipeline as deployed: statistics estimated on each tile as it arrives.
+
+Reported per family and dose (median over tiles, folds pooled, fold range shown): d_oracle / d_raw (**transform
+amplification** with a correct estimate) and d_norm / d_oracle (**estimation corruption**). Ratios above 1 that rise
+with dose are evidence of amplification at that stage. Limitation: a larger feature-space distance is not task harm by
+itself; it corroborates, and P5's model arms give the ΔG side. The two spaces (raw vs normalised) differ in distribution,
+so d_oracle / d_raw compares distances across spaces; the stain family, which normalisation should shrink, is the
+built-in check that the ratio moves in the expected direction.
