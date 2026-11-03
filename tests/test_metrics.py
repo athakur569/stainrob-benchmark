@@ -87,3 +87,16 @@ def test_newton_slope_matches_sklearn_with_weights():
     slope, intercept = compute_calibration_slope(y, p, sample_weight=w)
     assert slope == pytest.approx(ref.coef_[0, 0], abs=1e-4)
     assert intercept == pytest.approx(ref.intercept_[0], abs=1e-4)
+
+
+def test_slope_undefined_when_it_does_not_exist():
+    """D7: separation, no spread, and the ordinary case."""
+    y = np.array([0, 0, 0, 1, 1, 1])
+    sep = np.array([0.1, 0.2, 0.3, 0.7, 0.8, 0.9])                 # perfectly separated: no finite MLE
+    assert all(np.isnan(compute_calibration_slope(y, sep)))
+    flat = np.full(6, 1e-9)                                        # every probability clipped to the same value
+    assert all(np.isnan(compute_calibration_slope(y, flat)))
+    ok = np.array([0.1, 0.6, 0.3, 0.4, 0.8, 0.9])                  # overlapping: defined
+    assert np.isfinite(compute_calibration_slope(y, ok)[0])
+    w = np.array([1, 0, 1, 1, 1, 1.0])                             # weight 0 removes the overlap → separated
+    assert np.isnan(compute_calibration_slope(y, ok, sample_weight=w)[0])

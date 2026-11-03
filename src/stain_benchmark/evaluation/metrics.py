@@ -357,7 +357,10 @@ def compute_calibration_slope(
         sample_weight: Optional per-sample weights (e.g. patient-bootstrap multiplicities).
 
     Returns:
-        (slope, intercept).
+        (slope, intercept), or (nan, nan) where the slope does not exist (deviation D7): the predictions
+        have no spread (every probability clipped to the same value), or the two classes are perfectly
+        separated by the predictions, so the logistic fit has no finite maximum, or Newton's method
+        does not converge.
     """
     y_true = np.asarray(y_true).flatten().astype(float)
     p = np.clip(np.asarray(y_prob, dtype=float).flatten(), eps, 1 - eps)
@@ -365,6 +368,11 @@ def compute_calibration_slope(
         raise ValueError("calibration slope needs both classes present")
     w = np.ones_like(y_true) if sample_weight is None else np.asarray(sample_weight, dtype=float).flatten()
     lp = np.log(p / (1 - p))
+    used = w > 0
+    if np.ptp(lp[used]) < 1e-12:
+        return float("nan"), float("nan")                                   # no spread in the predictions
+    if lp[used & (y_true == 0)].max() < lp[used & (y_true == 1)].min():
+        return float("nan"), float("nan")                                   # perfect separation: no finite MLE
     # Unpenalised weighted logistic regression of y on [1, lp] by Newton's method (two parameters,
     # so each step is a 2x2 solve); same estimate as scikit-learn, far faster inside a bootstrap.
     X = np.column_stack([np.ones_like(lp), lp])
@@ -373,11 +381,14 @@ def compute_calibration_slope(
         mu = 1.0 / (1.0 + np.exp(-np.clip(X @ beta, -35, 35)))
         grad = X.T @ (w * (y_true - mu))
         hess = (X * (w * mu * (1 - mu))[:, None]).T @ X
-        step = np.linalg.solve(hess + 1e-12 * np.eye(2), grad)
+        try:
+            step = np.linalg.solve(hess + 1e-12 * np.eye(2), grad)
+        except np.linalg.LinAlgError:
+            return float("nan"), float("nan")
         beta += step
         if np.abs(step).max() < 1e-10:
-            break
-    return float(beta[1]), float(beta[0])
+            return float(beta[1]), float(beta[0])
+    return float("nan"), float("nan")                                       # did not converge
 
 
 # =============================================================================

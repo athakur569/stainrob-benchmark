@@ -218,7 +218,7 @@ def main() -> None:
         real_rows.append({"fold": f, "condition": c, "delta_g": d["real_auc"].estimate, "dg_low": d["real_auc"].low,
                           "dg_high": d["real_auc"].high, "label_D5": lab,
                           "slope_delta_g": d["real_slope"].estimate, "slope_low": d["real_slope"].low,
-                          "slope_high": d["real_slope"].high,
+                          "slope_high": d["real_slope"].high, "slope_resamples_defined": d["real_slope"].n_boot,
                           "tier1a_mmd2": t1w.loc[(f, "real"), ("mmd2", "tier1a")], "tier1a_flag": f1a,
                           "tier1b_mmd2": t1w.loc[(f, "real"), ("mmd2", "tier1b")], "tier1b_flag": f1b,
                           "tier2_mahalanobis": t2r.mahalanobis.mean(), "tier2_flag_seeds": int(t2r.flagged.sum()),
@@ -227,7 +227,8 @@ def main() -> None:
         # ---- synthetic arm
         names = list(meta.index)
         lo, hi = np.quantile(d["syn_boots"], [0.025, 0.975], axis=0)
-        slo, shi = np.quantile(d["syn_slope_boots"], [0.025, 0.975], axis=0)
+        slo, shi = np.nanquantile(d["syn_slope_boots"], [0.025, 0.975], axis=0)    # D7: undefined slopes dropped
+        s_def = np.isfinite(d["syn_slope_boots"]).sum(axis=0)
         t2c = t2[(t2.condition == c) & (t2.fold == f)].groupby("batch").agg(
             mahalanobis=("mahalanobis", "mean"), energy=("energy", "mean"), tier2_flag_seeds=("flagged", "sum"))
         pred = {"tier2": t2c.loc[names, "mahalanobis"].set_axis(names),
@@ -238,7 +239,7 @@ def main() -> None:
         for i, n in enumerate(names):
             syn_dg.append({"fold": f, "condition": c, "dose": n, **meta.loc[n].to_dict(), "delta_g": d["syn_point"][n],
                            "dg_low": lo[i], "dg_high": hi[i], "slope_delta_g": d["syn_slope_point"][n],
-                           "slope_low": slo[i], "slope_high": shi[i]})
+                           "slope_low": slo[i], "slope_high": shi[i], "slope_resamples_defined": int(s_def[i])})
             syn_sig.append({"fold": f, "condition": c, "dose": n, **{k: v[n] for k, v in pred.items()},
                             "tier1a_flag": bool(t1w.loc[(f, n), ("flagged", "tier1a")]),
                             "tier1b_flag": bool(t1w.loc[(f, n), ("flagged", "tier1b")]),

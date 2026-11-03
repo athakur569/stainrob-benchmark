@@ -113,3 +113,19 @@ the model and has one decision per fold and batch. Continuous signals are averag
 
 **Why.** Seeds are a nuisance (ISS-036); a majority vote treats them symmetrically without letting one seed decide.
 Recorded by the research chat before any monitor statistic on a test tile was computed.
+
+## D7 · 2026-11-02 · When the calibration slope does not exist (before any calibration-slope result was read)
+
+**What changes.** The calibration slope (the secondary ΔG metric) is the slope of a logistic regression of the label on
+logit(p). It does not exist when the two classes are perfectly separated by the model's scores (the fit has no finite
+maximum; with in-domain AUROC up to 0.997, some patient resamples separate perfectly), or when every probability is
+clipped to the same value (an extreme shift). The plan does not say what to do then. Fixed here: **such a slope is
+undefined, not a number**; a ΔG that involves it is undefined; bootstrap intervals use the resamples where it is
+defined, and the number of those resamples is reported beside every interval (`slope_resamples_defined`). The
+primary metric (AUROC) is unaffected.
+
+**Why.** The first full analysis run stopped on a singular matrix in the slope fit. The code had also, silently, returned
+the last iterate of a non-converging fit in separated cases — an arbitrary large number. Treating these as undefined
+reports what the data support; penalising the fit to force a number would change the estimator for every resample.
+The fit is unchanged wherever the slope exists (tests: agreement with scikit-learn). Recorded before any calibration-slope
+ΔG on a test tile was read; the real-arm AUROC results in the run log are unaffected.

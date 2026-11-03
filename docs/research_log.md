@@ -315,3 +315,11 @@ Status: **RESOLVED** · **OPEN** (work pending) · **DECISION** (design choice s
 - **Matched contrast (P1d, same patient thirds for every arm):** ResNet-50 false-alarm rate 0.446 with the
   reference-fitted projection, 0.026 pooled, 0.021 fitted on a separate third (external). Pooled and external are
   equivalent under the null; which to use is decided by power under shift (P3).
+
+### ISS-050 · statistics · The calibration slope does not always exist
+- **Found:** the first full analysis run stopped with a singular matrix while fitting the calibration slope inside
+  the bootstrap. The slope is a logistic regression of the label on logit(p); when a resample's scores separate the
+  classes perfectly, or every probability is clipped to one value, it has no finite estimate. The code had also been
+  returning an arbitrary large value when the fit failed to converge.
+- **Resolution:** undefined slopes are reported as undefined; intervals use the resamples where the slope exists, with
+  their count reported (deviation D7). AUROC, the primary metric, is unaffected. Tests added.
