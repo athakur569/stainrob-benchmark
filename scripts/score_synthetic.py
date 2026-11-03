@@ -33,6 +33,10 @@ def main() -> None:
     ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--only", default=None, help="restrict to runs whose path contains this text")
     ap.add_argument("--tag", default="", help="output subfolder suffix, e.g. for a post-hoc dose table")
+    ap.add_argument("--families", default=None, help="comma-separated subset of the dose table's families")
+    ap.add_argument("--conditions", default=None, help="comma-separated subset of conditions, e.g. E2,E3")
+    ap.add_argument("--estimate-on-clean", action="store_true",
+                    help="post hoc P5 oracle: the normaliser estimates on the unshifted tile (needs --tag)")
     args = ap.parse_args()
     plan = require_committed_plan()
     tiles_dir, runs = Path(args.tiles), Path(args.runs)
@@ -42,6 +46,11 @@ def main() -> None:
     run_dirs = sorted(p.parent for p in runs.glob("*/fold*/seed*/summary.json"))
     if args.only:
         run_dirs = [r for r in run_dirs if args.only in str(r)]
+    if args.conditions:
+        run_dirs = [r for r in run_dirs if r.parts[-3] in args.conditions.split(",")]
+    if args.estimate_on_clean and not args.tag:
+        raise SystemExit("--estimate-on-clean writes a post-hoc arm: give it a --tag")
+    fams = args.families.split(",") if args.families else list(doses["doses"])
     sub = "synthetic" + (f"_{args.tag}" if args.tag else "")
     todo = [r for r in run_dirs if not (r / sub / "done.json").exists()]
     print(f"{len(run_dirs) - len(todo)} of {len(run_dirs)} runs already scored; {len(todo)} to go", flush=True)
@@ -61,14 +70,17 @@ def main() -> None:
         test_in = table[table["role"] == "test_in"].reset_index(drop=True)
         out.mkdir(exist_ok=True)
         jobs = ([] if args.tag else [("unshifted", None)]) + [(f"{fam}_{k}", (fam, d["strength"], doses["shift_seed"]))
-                                        for fam, levels in doses["doses"].items() for k, d in enumerate(levels)]
+                                        for fam, levels in doses["doses"].items() if fam in fams
+                                        for k, d in enumerate(levels)]
         for name, shift in jobs:
             pred, feats = score_tiles(model, tiles_dir, test_in, dev, normalizer=norm_fn, shift=shift,
-                                      num_workers=args.workers, return_features=True)
+                                      num_workers=args.workers, return_features=True,
+                                      estimate_on_clean=args.estimate_on_clean and shift is not None)
             pred.to_csv(out / f"pred_{name}.csv", index=False)
             np.save(out / f"features_{name}.npy", feats)
         (out / "done.json").write_text(json.dumps({"analysis_plan_commit": plan, "n_tiles": len(test_in),
-                                                   "conditions": [j[0] for j in jobs], "doses": args.doses}, indent=2))
+                                                   "conditions": [j[0] for j in jobs], "doses": args.doses,
+                                                   "estimate_on_clean": args.estimate_on_clean}, indent=2))
         print(f"[{i}/{len(todo)}] {run.relative_to(runs)}: {len(jobs)} conditions × {len(test_in)} tiles", flush=True)
 
 

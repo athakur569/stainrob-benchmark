@@ -103,3 +103,21 @@ def test_custom_table_roles(frozen):
     t = t.assign(role=np.where(t.patient_id.str[-1].isin(["0", "1"]), "train", "pilot"))
     loaders, table = make_loaders(frozen, holdout=0, seed=1, batch_size=4, num_workers=0, table=t)
     assert set(loaders) == {"train", "pilot"} and len(loaders["pilot"].dataset) == (t.role == "pilot").sum()
+
+
+def test_estimate_on_clean_passes_the_unshifted_tile_as_source(frozen):
+    """P5 oracle: the normaliser sees the shifted tile but estimates on the clean one."""
+    t = fold_table(frozen, 0)
+    seen = {}
+
+    def norm(rgb, source=None):
+        seen["source"] = source
+        return rgb
+
+    TileDataset(frozen, t, normalizer=norm, shift=("blur", 2.0, 0), estimate_on_clean=True)[0]
+    clean = np.array(Image.open(frozen / t["path"].iloc[0]).convert("RGB"))
+    assert np.array_equal(seen["source"], clean)
+    TileDataset(frozen, t, normalizer=norm, shift=("blur", 2.0, 0))[0]
+    assert seen["source"] is None                                   # default: estimate on the tile as it arrives
+    with pytest.raises(ValueError):
+        TileDataset(frozen, t, normalizer=norm, estimate_on_clean=True)

@@ -7,15 +7,15 @@ To limit the freedom that gives, each is written down and committed here before 
 each is reported **beside** the pre-registered result, never in place of it.
 
 Status column: *specified* = written, not run · *run (training tiles only)* = needs no test data ·
-*awaiting decision* = needs test tiles; runs only once Abhi approves.
+*awaiting decision* = needs test tiles; runs only once Abhi approves. P2–P5 were approved by Abhi on 3 Nov 2026.
 
 | ID | Addresses | What | Data it reads | Status |
 |---|---|---|---|---|
 | P1 | ISS-046, ISS-049 | Patient-split null check (P1–P1d: clusters × projection source) | training tiles only | run (training tiles only) |
-| P2 | ISS-044 | Consistent-direction stain family (`stain_batch`) | test_in tiles, shifted | awaiting decision |
-| P3 | ISS-045, ISS-046 | Held-out reference and patient clusters for every tier | test_in, test_cross | awaiting decision |
-| P4 | ISS-048 | ΔG without individual tumour patients | existing test predictions | awaiting pathologist review |
-| P5 | run log (synthetic arm) | Why stain normalisation adds fragility to JPEG and striping | test_in tiles, shifted | awaiting decision |
+| P2 | ISS-044 | Consistent-direction stain family (`stain_batch`) | test_in tiles, shifted | approved 3 Nov; running |
+| P3 | ISS-045, ISS-046 | Held-out reference and patient clusters for every tier | test_in, test_cross | approved 3 Nov |
+| P4 | ISS-048 | ΔG without individual tumour patients | existing test predictions | part 1 approved 3 Nov; part 2 awaits pathologist review |
+| P5 | run log (synthetic arm) | Why stain normalisation adds fragility to JPEG and striping | test_in tiles, shifted | approved 3 Nov |
 | P5b | P5 | Does the normaliser itself amplify artefacts? (no model, no labels) | training-split calibration tiles only | run — estimation corruption not supported |
 
 ## P1 · Patient-split null check

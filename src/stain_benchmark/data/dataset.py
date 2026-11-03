@@ -64,12 +64,16 @@ class TileDataset(Dataset):
     ``shift`` = (family, strength, seed) applies a synthetic shift to each tile as it is read,
     before any normaliser — as a shifted slide would arrive at deployment.
     ``normalizer`` maps a uint8 RGB array to a uint8 RGB array (E2/E3 stain normalisation).
+    ``estimate_on_clean`` (post hoc, P5 oracle) makes the normaliser estimate its statistics on the tile
+    before the shift and apply them to the shifted tile; it needs a normaliser that takes ``source=``.
     """
 
     def __init__(self, out_dir: str | Path, table: pd.DataFrame,
                  normalizer: Callable[[np.ndarray], np.ndarray] | None = None,
                  augment: bool = False, domains: np.ndarray | None = None,
-                 shift: tuple[str, float, int] | None = None):
+                 shift: tuple[str, float, int] | None = None, estimate_on_clean: bool = False):
+        if estimate_on_clean and (shift is None or normalizer is None):
+            raise ValueError("estimate_on_clean needs both a shift and a normaliser")
         self.out_dir = Path(out_dir)
         self.paths = table["path"].tolist()
         self.tile_ids = table["tile_id"].astype(str).tolist()
@@ -78,17 +82,18 @@ class TileDataset(Dataset):
         self.normalizer = normalizer
         self.augment = augment
         self.domains = None if domains is None else np.asarray(domains, dtype=np.int64)
+        self.estimate_on_clean = estimate_on_clean
 
     def __len__(self) -> int:
         return len(self.paths)
 
     def __getitem__(self, i: int) -> dict:
-        rgb = np.array(Image.open(self.out_dir / self.paths[i]).convert("RGB"))
+        clean = rgb = np.array(Image.open(self.out_dir / self.paths[i]).convert("RGB"))
         if self.shift is not None:
             family, strength, seed = self.shift
             rgb = apply_shift(rgb, family, strength, seed, self.tile_ids[i])
         if self.normalizer is not None:
-            rgb = self.normalizer(rgb)
+            rgb = self.normalizer(rgb, source=clean) if self.estimate_on_clean else self.normalizer(rgb)
         x = torch.from_numpy(np.ascontiguousarray(rgb)).permute(2, 0, 1).float().div_(255)
         if self.augment:
             x = geometric_augment(x)
