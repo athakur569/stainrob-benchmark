@@ -12,6 +12,7 @@ Status column: *specified* = written, not run · *run (training tiles only)* = n
 | ID | Addresses | What | Data it reads | Status |
 |---|---|---|---|---|
 | P1 | ISS-046, ISS-049 | Patient-split null check (P1–P1d: clusters × projection source) | training tiles only | run (training tiles only) |
+| P1e | ISS-053 | Why slide clusters fail: random regrouping, hospital mix, tumour composition | training tiles only | specified 4 Nov |
 | P2 | ISS-044 | Consistent-direction stain family (`stain_batch`) | test_in tiles, shifted | run 3 Nov |
 | P3 | ISS-045, ISS-046 | Held-out reference and patient clusters for every tier | test_in, test_cross | run 3 Nov |
 | P4 | ISS-048 | ΔG without individual tumour patients | existing test predictions | part 1 approved 3 Nov; part 2 awaits pathologist review |
@@ -79,6 +80,23 @@ those of P1/P1b (halves); P1d is for the contrast.
 
 On matched patients, pooled and external are indistinguishable under the null; the reference-fitted projection fails
 for ResNet-50 at thirds as at halves. The choice between pooled and external is left to power under shift (P3).
+
+## P1e · Why slide clusters fail (ISS-053; specified 4 Nov)
+
+CAMELYON17's "patients" are artificial groups of five slides from different people of one hospital, composed by the
+organisers to balance pN stage (Bándi et al. 2019; Litjens et al. 2018). So P1's finding cannot be a same-person effect.
+Four arms, each on 100 splits per fold of the training tiles, Tier 1a and Tier 1b DenseNet-121, projection fitted on
+both batches (removing the ISS-049 confound), each tested with slide and with group clusters:
+
+- **within:** the training slides of each hospital regrouped at random into groups of five, halved by group;
+- **across:** random groups of five drawn across hospitals, halved by group;
+- **normal:** the artificial patients as given, normal tiles only;
+- **stratified:** the artificial patients halved within each hospital (equal hospital mix on both sides).
+
+Reading: if slide clusters fail for *within* and *normal* but hold for *across* and *stratified*, the cause is the hospital
+mix of the halves — groups confined to one hospital move hospitals in blocks, so the halves' hospital mix varies more
+than a slide permutation allows — not stage or tumour composition. Disclosure: a dry run of four splits on one fold
+(Tier 1a) was seen before this was written; it pointed this way (within 3/4, normal 2/4, across 0/4, stratified 0/4).
 
 ## P2 · Consistent-direction stain family
 

@@ -15,6 +15,16 @@ one third fits the projection, the other two are reference and deployment (still
 ``--thirds`` uses that same three-way split for every arm (the first third unused unless external), so arms can be
 compared on identical reference and deployment patients. Output columns are the same.
 
+P1e (ISS-053): CAMELYON17's "patients" are artificial groups of five slides from different people, composed by the
+organisers to balance pN stage. Why do slide clusters fail when batches differ by these groups? Arms:
+``--regroup within``  every hospital's training slides regrouped AT RANDOM into groups of five (groups stay in one
+                      hospital, like the organisers'), halved by group — tests the organisers' stage composition;
+``--regroup across``  random groups of five drawn across hospitals — groups no longer carry a hospital;
+``--normal-only``     normal tiles only — tests tumour composition;
+``--stratify-hospital`` halves within each hospital (each half holds half of every hospital's groups) — tests whether
+                      the hospital mix of the two halves is what varies more than a slide permutation allows.
+The "patient" columns then refer to whatever groups the split was made by.
+
 Training tiles only: no test data is read. Not part of the pre-registered analysis; reported as a
 labelled post-hoc diagnostic.
 
@@ -45,11 +55,12 @@ def load_tier1(base: Path, enc: str):
 
 
 def job(args) -> dict:
-    fold, tier, tiles_dir, runs, tier1_dir, n_splits, fit_on, thirds = args
+    fold, tier, tiles_dir, runs, tier1_dir, n_splits, fit_on, thirds, regroup, normal_only, stratify = args
     if tier == "tier2":
         p = pd.read_csv(runs / "E1" / f"fold{fold}" / "seed42" / "predictions_train.csv")
         X = np.load(runs / "E1" / f"fold{fold}" / "seed42" / "features_train.npy").astype(np.float64)
         slides, patients = p["slide_id"].astype(str).to_numpy(), p["patient_id"].astype(str).to_numpy()
+        centers, labels = p["center"].to_numpy(), p["label"].to_numpy()
     else:
         tab = fold_table(tiles_dir, fold)
         tab = tab[tab["role"] == "train"]
@@ -58,13 +69,42 @@ def job(args) -> dict:
         rows = pos.loc[tab["tile_id"].astype(str)].to_numpy()
         X = (a1a if tier == "tier1a" else a1b)[rows].astype(np.float64)
         slides, patients = tab["slide_id"].astype(str).to_numpy(), tab["patient_id"].astype(str).to_numpy()
+        centers, labels = tab["center"].to_numpy(), tab["label"].to_numpy()
+    if normal_only:
+        keep = labels == 0
+        X, slides, patients, centers = X[keep], slides[keep], patients[keep], centers[keep]
     sub = per_slide_subsample(slides)
-    X, slides, patients = X[sub], slides[sub], patients[sub]
+    X, slides, patients, centers = X[sub], slides[sub], patients[sub], centers[sub]
     ncomp = None if tier == "tier1a" else N_COMPONENTS
     upat = np.unique(patients)
     flags = {"slide": 0, "patient": 0}
+    slide_center = dict(zip(slides, centers))
     for i in range(n_splits):
         rng = np.random.default_rng([int(fold), i])           # same splits for every tier and cluster type
+        if regroup == "within":                               # random groups of five slides within each hospital
+            group_of = {}
+            for c in sorted(set(centers)):
+                cs = rng.permutation(sorted(s for s, cc in slide_center.items() if cc == c))
+                group_of.update({s: f"g{c}_{k // 5}" for k, s in enumerate(cs)})
+            patients = np.array([group_of[s] for s in slides])
+            upat = np.unique(patients)
+        elif regroup == "across":                             # random groups of five slides across hospitals
+            cs = rng.permutation(sorted(slide_center))
+            group_of = {s: f"g{k // 5}" for k, s in enumerate(cs)}
+            patients = np.array([group_of[s] for s in slides])
+            upat = np.unique(patients)
+        if stratify:                                          # half of every hospital's groups on each side
+            grp_center = {g: c for g, c in zip(patients, centers)}
+            ref_groups = []
+            for c in sorted(set(centers)):
+                gs = rng.permutation(sorted(g for g in upat if grp_center[g] == c))
+                ref_groups += list(gs[: len(gs) // 2])
+            m = np.isin(patients, ref_groups)
+            for kind, ids in (("slide", slides), ("patient", patients)):
+                flags[kind] += tier1(X[m], X[~m], ids[m], ids[~m], ncomp, n_permutations=99, seed=i, fit_on=fit_on,
+                                     external=None)["flagged"] if tier != "tier2" else \
+                    tier2(X[m], X[~m], ids[m], ids[~m], seed=i)["flagged"]
+            continue
         order = rng.permutation(upat)
         ext = None
         if thirds or fit_on == "external":                    # thirds: projection / reference / deployment
@@ -81,7 +121,9 @@ def job(args) -> dict:
             else:
                 flags[kind] += tier1(X[m], X[~m & keep], ids[m], ids[~m & keep], ncomp, n_permutations=99,
                                      seed=i, fit_on=fit_on, external=ext)["flagged"]
-    return {"fold": fold, "tier": tier, "fit_on": fit_on, "split": "thirds" if thirds or fit_on == "external" else "halves",
+    return {"fold": fold, "tier": tier, "fit_on": fit_on, "regroup": regroup, "normal_only": normal_only,
+            "stratify_hospital": stratify,
+            "split": "thirds" if thirds or fit_on == "external" else "halves",
             "patients": len(upat), "splits": n_splits, "nominal_alpha": ALPHA,
             "false_alarm_slide_clusters": flags["slide"] / n_splits,
             "false_alarm_patient_clusters": flags["patient"] / n_splits}
@@ -98,10 +140,15 @@ def main() -> None:
     ap.add_argument("--fit-on", default="reference", choices=("reference", "pooled", "external"))
     ap.add_argument("--tiers", default=",".join(TIERS))
     ap.add_argument("--thirds", action="store_true", help="same projection/reference/deployment thirds for every arm")
+    ap.add_argument("--regroup", default="none", choices=("none", "within", "across"),
+                    help="P1e: random groups of five slides, within or across hospitals")
+    ap.add_argument("--stratify-hospital", action="store_true", help="P1e: halve within each hospital")
+    ap.add_argument("--normal-only", action="store_true", help="P1e second arm: normal tiles only")
     args = ap.parse_args()
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
-    jobs = [(f, t, Path(args.tiles), Path(args.runs), Path(args.tier1), args.splits, args.fit_on, args.thirds)
+    jobs = [(f, t, Path(args.tiles), Path(args.runs), Path(args.tier1), args.splits, args.fit_on, args.thirds,
+             None if args.regroup == "none" else args.regroup, args.normal_only, args.stratify_hospital)
             for f in FOLDS for t in args.tiers.split(",")]
     rows = []
     with ProcessPoolExecutor(args.jobs) as ex:
