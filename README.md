@@ -51,8 +51,10 @@ cover changes in label definitions or patient population.
 
 Public, de-identified data only (IRB: Exempt).
 
-- **CAMELYON17 — the rehearsal.** Lymph-node H&E slides, 5 hospitals (three scanner types),
-  100 patients, 500 slides, tumour outlines on 50 slides. Small enough to exercise and debug
+- **CAMELYON17 — the rehearsal.** Lymph-node H&E slides, 5 hospitals, three scanners (hospitals 0, 1 and 3 were
+  scanned on the same scanner at one site), 500 labelled slides in 100 "patients", tumour outlines on 50 slides. The
+  "patients" are artificial: the organisers grouped five slides from different people of one hospital to balance pN
+  stage (Bándi et al. 2019), so a "patient" here is that grouping, not a person. Small enough to exercise and debug
   every step quickly. Only 4–7 patients per hospital have outlined tumour, so its five
   real hospitals give descriptive results; the inferential weight rests on a controlled
   synthetic-shift experiment, where the same patients are compared under different shifts.
@@ -70,7 +72,7 @@ step was also run on the frozen CAMELYON17 tiles and inspected before use.
 
 | Step | Where | Checked on real tiles |
 |---|---|---|
-| Slide table, tiling at 0.5 µm/px, quality control, patient splits, SHA256 freeze | `data/` | yes — 11,763 tiles frozen; tiles verified against raw slides on all 5 scanners |
+| Slide table, tiling at 0.5 µm/px, quality control, patient splits, SHA256 freeze | `data/` | yes — 11,763 tiles frozen; tiles verified against raw slides from all 5 hospitals (3 scanners) |
 | Fold loader: leave-one-hospital-out roles, freeze check at start-up | `data/dataset.py` | yes — 12–15 tumour patients in-domain per fold, 4–7 at the held-out hospital |
 | Training run: WILDS schedule, per-tile predictions and 2,048-d features saved | `training/run.py`, `scripts/train.py` | yes — bit-for-bit reproducible on GPU; loss levels off by epoch 8–10; ~4 min per run |
 | Conditions E1 (baseline), E2 (Macenko), E3 (Reinhard), E5 (DANN over training hospitals) | `training/run.py` | yes — see figure below; DANN's hospital-recognition falls from 83% to 32% (chance 25%) |
