@@ -211,3 +211,14 @@ seed-averaged; this metric was not pre-registered and was examined before this e
   hospital — the hospitals genuinely differ in appearance (strongest at hospitals 2 and 4, the other scanners) — and,
   by the reading rule fixed beforehand, those alarms track appearance rather than harm (exception: E5 at hospital 2).
 - Details and tables: `docs/posthoc_analyses.md`, P2 and P3.
+
+## 4 Nov 2026 · Post-hoc P4 and P5 (approved 3 Nov; specified beforehand)
+
+- **P4 — hospital 2's gap is mostly one patient.** Without patient 042 the gap falls by 67–80% for E1–E3; without 042 and
+  052 it is no longer detectable; only E5's survives (`docs/posthoc_analyses.md`, P4).
+- **P5 — stain normalisation's extra fragility is not corrupted estimation.** Estimating the normaliser's statistics on the
+  damaged tile (as deployed) is *less* harmful than estimating them on the clean tile (oracle) for striping — the per-tile
+  estimate partly compensates. The extra loss sits in how normalised-trained models respond to the artefact (P5, P5b).
+- **The pre-registered round is closed.** Everything above is reported as specified, with the post-hoc analyses beside
+  it. The next round (v0.2, slide-level, monitors of the deployed model) is specified in `docs/v0.2/plan.md` on its own
+  branch.

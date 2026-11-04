@@ -5,21 +5,20 @@ Technology) on **label-free validity monitoring for computational pathology**: d
 when stain or scanner variation at a new site has made a deployed model's outputs
 unreliable, without needing new labels at that site.
 
-> **Status: work in progress (2 November 2026).** The CAMELYON17 rehearsal is built, tested and running.
-> The [analysis plan](docs/analysis_plan.md) was committed before any test-set result existed; that commit is
-> what opens the test sets in code. Since then:
-> - **All 60 training runs are done** (4 conditions × 5 held-out hospitals × 3 seeds). First results are in the
->   [run log](docs/run_log.md): one held-out hospital (hospital 2) shows a measurable accuracy gap in every
->   condition (the hospital the WILDS benchmark holds out as its test site). Most of that gap turns out to be
->   one patient whose tumour tiles the model misses; pathologist review of that patient is pending.
-> - **Checking the monitor's false-alarm rate on real data found three design flaws** in the pre-registered monitor
->   (research log ISS-045, ISS-046, ISS-049), plus one in the stain shift (ISS-044). Corrections are written down in
->   [post-hoc analyses](docs/posthoc_analyses.md) before they are run, and will be reported beside — never instead
->   of — the pre-registered results.
-> - **The full pre-registered analysis is done** ([run log](docs/run_log.md)): the monitor's signal rises with harm
->   (H1 supported); it does not rank harm better than image-difference measures that need the original tile (H2 not
->   supported); a specific prediction about colour statistics failed (H3). As pre-registered, the monitor's alarms
->   cannot be trusted — the next step is the corrected monitor (post-hoc P3), which awaits a decision.
+> **Status: work in progress (4 November 2026).** The pre-registered CAMELYON17 round (v0.1) is complete and
+> reported as specified; a slide-level second round (v0.2) is being built on a separate branch.
+> - **v0.1, pre-registered** ([plan](docs/analysis_plan.md), committed before any test result; [run log](docs/run_log.md)):
+>   60 training runs (4 stain-handling conditions × 5 held-out hospitals × 3 seeds). The monitor's signal rises with
+>   tile-level harm (H1 supported); it does not rank harm better than image-difference measures that need the original
+>   tile (H2 not supported); a prediction about colour statistics failed (H3).
+> - **v0.1, post hoc** ([specified before running](docs/posthoc_analyses.md)): checking the monitor against realistic
+>   nulls found three design flaws (which reference, how it is resampled, what the projection is fitted on); corrected,
+>   the monitor holds its false-alarm rate but alarms on a third to a half of harmless shifts and at every new
+>   hospital — it tracks appearance, not harm. A consistent stain drift that costs nothing sets pixel statistics off
+>   90% of the time. The only real-site gap (hospital 2) is mostly one patient, and tile-level AUROC turned out to be a
+>   weak outcome: at another hospital accuracy fell 21 points while AUROC barely moved.
+> - **v0.2, in progress** on the [`v0.2` branch](https://github.com/athakur569/stainrob-benchmark/tree/v0.2) ([plan](https://github.com/athakur569/stainrob-benchmark/blob/v0.2/docs/v0.2/plan.md)): every slide at slide level (500 labelled, 146 with metastases;
+>   500 unlabelled), a slide-level model, and label-free monitors that watch the deployed model rather than its inputs.
 >
 > Review is welcome at any level; the [open questions](#open-questions-for-review) list where it would help most.
 
@@ -237,14 +236,16 @@ Recorded in the [analysis plan](docs/analysis_plan.md) and the research log:
 - **Generic-encoder tier (ISS-043).** The ImageNet ResNet-50 starts from the same weights as the classifier it
   monitors, so DenseNet-121 is the primary Tier 1b encoder and ResNet-50 a sensitivity analysis.
 - **The monitor's reference (ISS-045, ISS-046, ISS-049).** Which data the reference is, how it is resampled, and what
-  the feature projection is fitted on each turned out to decide whether the monitor alarms on any new patients. Are
-  the proposed corrections (held-out reference, patient clusters, pooled or external projection) the right ones?
-- **The stain shift (ISS-044).** As pre-registered it changes each tile in a random direction, which cancels across a
-  batch; a consistent-direction version is specified as a post-hoc analysis.
-- **Hard patients (ISS-048).** Is the hospital 2 gap a site effect or a few patients? Pathologist review of the
-  contact sheet, and ΔG without each patient in turn (P4), are planned.
-- **Small rehearsal dataset (ISS-017).** 4–7 tumour patients per hospital limit what the five real
-  hospitals can show; this is why the controlled synthetic arm carries the inference.
+  the feature projection is fitted on each decided whether the monitor alarms on any new patients. The corrections
+  (held-out reference, patient clusters, external projection) hold the false-alarm rate (post-hoc P1–P3) — but the
+  corrected monitor still tracks appearance rather than harm. Is moving to monitors of the deployed model (v0.2) the
+  right response?
+- **The outcome (run log, 3 Nov).** Tile-level AUROC barely moved where slide-relevant sensitivity fell 21 points.
+  Is slide-level sensitivity at the operating point (v0.2) the right definition of harm?
+- **Hard patients (ISS-048).** Most of the hospital 2 gap is one patient (P4). Are that patient's missed tiles tumour
+  or non-tumour tissue inside a coarse outline? Pathologist review is pending.
+- **Small rehearsal dataset (ISS-017).** 4–7 tumour patients per hospital with tile labels; v0.2's slide labels lift
+  this to 23–35 tumour slides per hospital.
 - **TCGA task (ISS-012).** Tumour-vs-normal is confounded with frozen vs FFPE preparation.
 
 ## Known limitations
@@ -256,7 +257,12 @@ Recorded in the [analysis plan](docs/analysis_plan.md) and the research log:
   same patients are on both sides.
 - **The pre-registered monitor is reported as specified, flaws included.** Its Tier 1 alarms on new patients even
   without a shift (see the table above), and its Tier 2 reference is the model's own training tiles (ISS-045).
-  Corrected versions are reported beside it.
+  Corrected versions are reported beside it (post-hoc P1–P3).
+- **What was tested is narrower than "harm".** H1 and H2 were evaluated against tile-level AUROC loss; at hospital 4 a
+  21-point accuracy drop (all missed tumour, concentrated in two patients) left AUROC almost unchanged. The
+  pre-registered results support "the monitor tracks tile-AUROC loss", not "the monitor tracks harm".
+- **Appearance is not harm, for the corrected monitor too.** It alarms at every held-out hospital and on 15–51% of
+  harmless synthetic shifts (P3).
 - **Rehearsal scale.** CAMELYON17 has 4–7 tumour patients per hospital; see the open questions above.
 
 ## Related

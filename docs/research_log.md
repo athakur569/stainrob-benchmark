@@ -323,3 +323,18 @@ Status: **RESOLVED** · **OPEN** (work pending) · **DECISION** (design choice s
   returning an arbitrary large value when the fit failed to converge.
 - **Resolution:** undefined slopes are reported as undefined; intervals use the resamples where the slope exists, with
   their count reported (deviation D7). AUROC, the primary metric, is unaffected. Tests added.
+
+### Outcomes of the post-hoc series (3 Nov 2026; `docs/posthoc_analyses.md`)
+- **ISS-044 (stain direction):** with the consistent-direction family (P2), stain drift up to ΔE 12 costs nothing
+  (ΔG −0.009 to −0.001, every condition) while pixel statistics alarm on it up to 90% of the time. The idea behind H3
+  holds with the generator fixed; the pre-registered H3 stays failed as specified. **Closed.**
+- **ISS-045 (Tier 2 reference):** with a held-out in-domain reference (P3), Tier 2 holds α in three of four conditions
+  (0.02–0.06; E1 0.12) but loses power (0.45–0.60 on harmful doses) and ranks harm worse (ρ 0.17–0.39); how much of that
+  is the reference and how much the half-size batches is not separable here. **Closed (reported both ways).**
+- **ISS-046 (cluster unit):** patient clusters are required when reference and deployment differ by patient (P1); with
+  them every Tier 1 arm holds α. **Closed.**
+- **ISS-049 (projection):** a projection fitted on both batches, or on external data, keeps the permutation test exact
+  (P1b–P1d); the external projection has slightly more power (P3) and is the one named. **Closed.**
+- **What the corrected monitor shows (P3):** it holds α and detects 65–95% of harmful synthetic doses, but also alarms on
+  15–51% of harmless ones and at every held-out hospital — appearance, not harm. This is the evidence that sends the next
+  version (v0.2, `docs/v0.2/plan.md`) to monitors that watch the deployed model instead of the inputs.

@@ -13,6 +13,7 @@ Specification: docs/posthoc_analyses.md, P5.
 """
 
 import argparse
+from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
 import numpy as np
@@ -30,6 +31,7 @@ def main() -> None:
     ap.add_argument("--prereg", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--boot", type=int, default=2000)
+    ap.add_argument("--jobs", type=int, default=10)
     args = ap.parse_args()
     plan = require_committed_plan()
     runs, out = Path(args.runs), Path(args.out)
@@ -37,28 +39,38 @@ def main() -> None:
     pre = pd.read_csv(Path(args.prereg) / "synthetic_dg.csv")
     pre["fold"] = pre.fold.astype(str)
     e1 = pre[pre.condition == "E1"].set_index(["fold", "dose"])
+    jobs = [(runs, f, c, e1, pre, args.boot) for f in FOLDS for c in CONDITIONS]
+    with ProcessPoolExecutor(args.jobs) as ex:
+        rows = [r for rs in ex.map(job, jobs) for r in rs]
+    finish(rows, out, plan, args.boot)
+
+
+def job(a) -> list[dict]:
+    runs, f, c, e1, pre, n_boot = a
     rows = []
-    for f in FOLDS:
-        for c in CONDITIONS:
-            rds = [runs / c / f"fold{f}" / f"seed{s}" for s in SEEDS]
-            names = sorted(p.name[5:-4] for p in (rds[0] / "synthetic_p5_oracle").glob("pred_*.csv"))
-            refs = [pd.read_csv(rd / "synthetic" / "pred_unshifted.csv") for rd in rds]
-            shifted = [{**{f"{n}|deployed": pd.read_csv(rd / "synthetic" / f"pred_{n}.csv") for n in names},
-                        **{f"{n}|oracle": pd.read_csv(rd / "synthetic_p5_oracle" / f"pred_{n}.csv") for n in names}}
-                       for rd in rds]
-            pt, boots = joint_delta_g_seeds(refs, shifted, args.boot, seed=0)
-            cols = list(shifted[0])
-            for n in names:
-                ia, ib = cols.index(f"{n}|deployed"), cols.index(f"{n}|oracle")
-                diff = boots[:, ia] - boots[:, ib]
-                e1_dg = e1.loc[(f, n), "delta_g"]
-                rows.append({"fold": f, "condition": c, "dose": n, "family": n.rsplit("_", 1)[0],
-                             "delta_e": pre[(pre.dose == n)].delta_e.iloc[0],
-                             "dg_deployed": pt[f"{n}|deployed"], "dg_oracle": pt[f"{n}|oracle"], "dg_E1": e1_dg,
-                             "estimation_effect": pt[f"{n}|deployed"] - pt[f"{n}|oracle"],
-                             "estimation_low": np.quantile(diff, 0.025), "estimation_high": np.quantile(diff, 0.975),
-                             "transform_plus_model": pt[f"{n}|oracle"] - e1_dg})
-            print(f"fold {f} {c}: {len(names)} doses", flush=True)
+    rds = [runs / c / f"fold{f}" / f"seed{s}" for s in SEEDS]
+    names = sorted(p.name[5:-4] for p in (rds[0] / "synthetic_p5_oracle").glob("pred_*.csv"))
+    refs = [pd.read_csv(rd / "synthetic" / "pred_unshifted.csv") for rd in rds]
+    shifted = [{**{f"{n}|deployed": pd.read_csv(rd / "synthetic" / f"pred_{n}.csv") for n in names},
+                **{f"{n}|oracle": pd.read_csv(rd / "synthetic_p5_oracle" / f"pred_{n}.csv") for n in names}}
+               for rd in rds]
+    pt, boots = joint_delta_g_seeds(refs, shifted, n_boot, seed=0)
+    cols = list(shifted[0])
+    for n in names:
+        ia, ib = cols.index(f"{n}|deployed"), cols.index(f"{n}|oracle")
+        diff = boots[:, ia] - boots[:, ib]
+        e1_dg = e1.loc[(f, n), "delta_g"]
+        rows.append({"fold": f, "condition": c, "dose": n, "family": n.rsplit("_", 1)[0],
+                     "delta_e": pre[(pre.dose == n)].delta_e.iloc[0],
+                     "dg_deployed": pt[f"{n}|deployed"], "dg_oracle": pt[f"{n}|oracle"], "dg_E1": e1_dg,
+                     "estimation_effect": pt[f"{n}|deployed"] - pt[f"{n}|oracle"],
+                     "estimation_low": np.quantile(diff, 0.025), "estimation_high": np.quantile(diff, 0.975),
+                     "transform_plus_model": pt[f"{n}|oracle"] - e1_dg})
+    print(f"fold {f} {c}: {len(names)} doses", flush=True)
+    return rows
+
+
+def finish(rows: list, out: Path, plan: str, n_boot: int) -> None:
     d = pd.DataFrame(rows)
     d.to_csv(out / "decomposition.csv", index=False)
     s = d.groupby(["condition", "family", "delta_e"]).agg(
@@ -67,7 +79,7 @@ def main() -> None:
         folds_estimation_above_0=("estimation_low", lambda x: int((x > 0).sum())),
         folds_estimation_below_0=("estimation_high", lambda x: int((x < 0).sum()))).reset_index()
     s.to_csv(out / "summary.csv", index=False)
-    (out / "provenance.txt").write_text(f"analysis plan {plan}; post-hoc P5; {args.boot} resamples\n")
+    (out / "provenance.txt").write_text(f"analysis plan {plan}; post-hoc P5; {n_boot} resamples\n")
     print(f"wrote {out}", flush=True)
 
 

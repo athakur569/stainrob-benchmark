@@ -15,7 +15,7 @@ Status column: *specified* = written, not run · *run (training tiles only)* = n
 | P2 | ISS-044 | Consistent-direction stain family (`stain_batch`) | test_in tiles, shifted | run 3 Nov |
 | P3 | ISS-045, ISS-046 | Held-out reference and patient clusters for every tier | test_in, test_cross | run 3 Nov |
 | P4 | ISS-048 | ΔG without individual tumour patients | existing test predictions | part 1 approved 3 Nov; part 2 awaits pathologist review |
-| P5 | run log (synthetic arm) | Why stain normalisation adds fragility to JPEG and striping | test_in tiles, shifted | approved 3 Nov |
+| P5 | run log (synthetic arm) | Why stain normalisation adds fragility to JPEG and striping | test_in tiles, shifted | run 4 Nov |
 | P5b | P5 | Does the normaliser itself amplify artefacts? (no model, no labels) | training-split calibration tiles only | run — estimation corruption not supported |
 
 ## P1 · Patient-split null check
@@ -216,6 +216,15 @@ Decomposition (raised by career-ops; E1's values already exist, so this is arith
   and E1's on raw tiles, so this term mixes what the transform does to the artefact with how the two models differ.
   It cannot be read as pure amplification, and is reported with that label.
 
+**P5 result (4 Nov; E2 and E3, JPEG and striping, 5 folds, joint patient bootstrap).**
+- **Estimating on the damaged tile protects rather than harms.** For striping, ΔG(deployed) − ΔG(oracle) is negative:
+  E3 −0.05 to −0.21 from ΔE 6 up (interval below 0 in 3–5 of 5 folds); E2 −0.14 to −0.28 at ΔE 20–30 (4–5 of 5 folds).
+  JPEG: small and mixed (E2 +0.003 to +0.010 at mild doses, −0.04 to −0.06 at strong; E3 −0.06 to +0.05). The per-tile
+  estimate partly compensates for the artefact; the hypothesis P5 was written to test is not supported.
+- **The extra fragility lies in the transform-plus-model term:** ΔG(oracle) − ΔG(E1) reaches +0.24 to +0.53 for E3
+  striping at ΔE 10–25 and +0.13 to +0.17 for JPEG at ΔE 10–15. With P5b showing that the transform barely amplifies the
+  artefacts as a generic encoder sees them, the most likely seat is how models trained on normalised tiles respond to
+  the artefact — the model-difference part of that term, which this design cannot isolate further.
 ### P5b · Amplification measured on the normaliser itself (raised by career-ops)
 
 Whether a normaliser magnifies an artefact is a property of the function N, not of any classifier, so it can be measured
