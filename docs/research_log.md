@@ -338,3 +338,17 @@ Status: **RESOLVED** · **OPEN** (work pending) · **DECISION** (design choice s
 - **What the corrected monitor shows (P3):** it holds α and detects 65–95% of harmful synthetic doses, but also alarms on
   15–51% of harmless ones and at every held-out hospital — appearance, not harm. This is the evidence that sends the next
   version (v0.2, `docs/v0.2/plan.md`) to monitors that watch the deployed model instead of the inputs.
+
+### ISS-053 · data · CAMELYON17's "patients" are artificial groupings of five slides
+- **Found (4 Nov, from Bándi et al. 2019 §II.C and Litjens et al. 2018):** to balance pN stage across centres, the
+  organisers grouped five slides *from different people* of one hospital into each "patient". The 1,000 slides come from
+  711 lymph node resections, so some real people contribute several slides — necessarily to different artificial
+  patients — and can fall on both sides of a split within a hospital. Real identifiers are not public. A held-out
+  hospital shares no real people with training.
+- **Consequences:** (1) ISS-046's explanation ("a patient's slides resemble each other") cannot be biological; the rule —
+  cluster by the unit that differs between batches — stands, and P1e tests the mechanism. (2) In-domain performance may
+  be flattered by real-person overlap, so the real-arm gap may be overstated and null false-alarm rates optimistic for
+  truly new people; the paired synthetic arm is less exposed; TCGA, with real IDs, can size this. (3) Hospitals 0, 1 and
+  3 were scanned on the same scanner at one site (Bándi), so those folds compare laboratories, not scanners.
+- **Stage counts:** `stages.csv` matches Litjens et al.'s Table 4 exactly for three centres and differs by 2–3 slides for
+  two; the released file is used throughout.
