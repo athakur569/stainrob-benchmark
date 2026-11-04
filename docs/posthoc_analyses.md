@@ -12,7 +12,7 @@ Status column: *specified* = written, not run · *run (training tiles only)* = n
 | ID | Addresses | What | Data it reads | Status |
 |---|---|---|---|---|
 | P1 | ISS-046, ISS-049 | Patient-split null check (P1–P1d: clusters × projection source) | training tiles only | run (training tiles only) |
-| P1e | ISS-053 | Why slide clusters fail: random regrouping, hospital mix, tumour composition | training tiles only | specified 4 Nov |
+| P1e | ISS-053 | Why slide clusters fail: random regrouping, hospital mix, tumour composition | training tiles only | run 4 Nov — hospital mix |
 | P2 | ISS-044 | Consistent-direction stain family (`stain_batch`) | test_in tiles, shifted | run 3 Nov |
 | P3 | ISS-045, ISS-046 | Held-out reference and patient clusters for every tier | test_in, test_cross | run 3 Nov |
 | P4 | ISS-048 | ΔG without individual tumour patients | existing test predictions | part 1 approved 3 Nov; part 2 awaits pathologist review |
@@ -97,6 +97,27 @@ Reading: if slide clusters fail for *within* and *normal* but hold for *across* 
 mix of the halves — groups confined to one hospital move hospitals in blocks, so the halves' hospital mix varies more
 than a slide permutation allows — not stage or tumour composition. Disclosure: a dry run of four splits on one fold
 (Tier 1a) was seen before this was written; it pointed this way (within 3/4, normal 2/4, across 0/4, stratified 0/4).
+
+**P1e result (4 Nov; 100 splits × 5 folds per arm; false-alarm rate, mean (range over folds), α = 0.05):**
+
+| Arm | Tier | Slide clusters | Group clusters |
+|---|---|---|---|
+| within | 1a pixel statistics | 0.366 (0.25–0.43) | 0.014 (0.00–0.04) |
+| within | 1b DenseNet-121 | 0.394 (0.23–0.48) | 0.018 (0.01–0.04) |
+| normal | 1a pixel statistics | 0.362 (0.31–0.46) | 0.024 (0.01–0.04) |
+| normal | 1b DenseNet-121 | 0.376 (0.28–0.49) | 0.034 (0.01–0.08) |
+| across | 1a pixel statistics | 0.026 (0.01–0.04) | 0.024 (0.01–0.05) |
+| across | 1b DenseNet-121 | 0.050 (0.02–0.09) | 0.044 (0.02–0.07) |
+| stratified | 1a pixel statistics | 0.010 (0.00–0.02) | 0.000 (0.00–0.00) |
+| stratified | 1b DenseNet-121 | 0.022 (0.00–0.06) | 0.000 (0.00–0.00) |
+
+The pattern specified above is what happened. Slide clusters fail for *within* and *normal* and hold for *across* and
+*stratified*. So the excess comes from the hospital mix of the halves. It cannot be a same-person effect: the *within*
+groups are random, and it fails just as badly. Nor is it tumour composition: normal tiles alone fail as badly as all
+tiles. Group clusters hold α in every arm. In *stratified* they are conservative (0.000): the halves were balanced by
+hospital but the permutation is not, so the permutation spreads wider than the halves really vary. A permutation
+within hospital would be exact. **Rule carried forward:** permute the unit the batches were assembled from, within any
+strata they were balanced on.
 
 ## P2 · Consistent-direction stain family
 

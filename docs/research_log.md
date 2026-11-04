@@ -352,3 +352,7 @@ Status: **RESOLVED** · **OPEN** (work pending) · **DECISION** (design choice s
   3 were scanned on the same scanner at one site (Bándi), so those folds compare laboratories, not scanners.
 - **Stage counts:** `stages.csv` matches Litjens et al.'s Table 4 exactly for three centres and differs by 2–3 slides for
   two; the released file is used throughout.
+- **Mechanism (P1e, 4 Nov):** the cause is the hospital mix of the halves. Slide clusters fail at 0.36–0.39 when groups are
+  confined to one hospital (random or as given, with all tiles or normal tiles only). They hold at 0.01–0.05 when the
+  groups span hospitals or the halves are balanced by hospital. Group clusters hold α in every arm. Rule: permute the unit
+  the batches were assembled from, within any strata they were balanced on. **Closed.**
