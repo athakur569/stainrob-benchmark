@@ -126,8 +126,10 @@ tier was asked whether the halves differ (target: 5%). Mean over the five folds:
 
 Two independent faults: resampling slides when reference and deployment differ by *patient* (ISS-046), and fitting
 the feature projection on the reference alone, which no permutation test survives in high dimension (ISS-049).
-The pre-registered check had split slides of the same patients, which is why it looked calibrated. Details and the
-matched comparison of projection choices: [`docs/posthoc_analyses.md`](docs/posthoc_analyses.md) (P1–P1d).
+The pre-registered check split slides of the same patients, which is why it looked nearly calibrated (pixel
+statistics 0.010–0.035, Tier 2 at most 0.010; DenseNet-121 0.05–0.115, already miscalibrated in folds 1–4). Details
+and the matched comparison of projection choices: [`docs/posthoc_analyses.md`](docs/posthoc_analyses.md) (P1–P1d);
+why slide clusters fail (the hospital mix of the halves, not patient likeness): P1e.
 
 ### Where the model fails
 
