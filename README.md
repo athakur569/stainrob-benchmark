@@ -17,7 +17,7 @@ unreliable, without needing new labels at that site.
 >   hospital — it tracks appearance, not harm. A consistent stain drift that costs nothing sets pixel statistics off
 >   90% of the time. The only real-site gap (hospital 2) is mostly one patient, and tile-level AUROC turned out to be a
 >   weak outcome: at another hospital accuracy fell 21 points while AUROC barely moved.
-> - **v0.2, in progress** on the [`v0.2` branch](https://github.com/athakur569/stainrob-benchmark/tree/v0.2) ([plan](https://github.com/athakur569/stainrob-benchmark/blob/v0.2/docs/v0.2/plan.md)): every slide at slide level (500 labelled, 146 with metastases;
+> - **v0.2, in progress** on a separate branch: every slide at slide level (500 labelled, 146 with metastases;
 >   500 unlabelled), a slide-level model, and label-free monitors that watch the deployed model rather than its inputs.
 >
 > Review is welcome at any level; the [open questions](#open-questions-for-review) list where it would help most.
@@ -143,7 +143,7 @@ pathologist review (ISS-048).
   plan's commit timestamp shows it came before any test result.
 - Every problem met and every design decision is logged with its reasoning in
   [`docs/research_log.md`](docs/research_log.md).
-- Changes made after the plan are numbered [deviations](docs/deviations.md) (D1–D6, all fixed before the results
+- Changes made after the plan are numbered [deviations](docs/deviations.md) (D1–D7, each fixed before the results
   they affect). Analyses designed after seeing results are [specified and committed before they run](docs/posthoc_analyses.md).
 
 ### The frozen CAMELYON17 tile set
