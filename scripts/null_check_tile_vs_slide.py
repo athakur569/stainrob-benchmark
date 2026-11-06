@@ -24,7 +24,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-import stain_benchmark.evaluation.analysis  # noqa: F401  (puts wsidrift on the path)
+from stain_benchmark.evaluation.analysis import wsidrift_source  # also puts wsidrift on the path
 from wsidrift.monitor.divergence import Tier1Monitor
 
 N_SPLITS, ALPHA, N_PERM, PER_SLIDE, N_PC = 40, 0.10, 99, 8, 50
@@ -49,6 +49,7 @@ def main() -> None:
     feats = {k: v[keep] for k, v in feats.items()}
     slides = tiles.slide_id.unique()
     g = tiles.slide_id.to_numpy()
+    print(wsidrift_source(), flush=True)
     print(f"{len(tiles)} tiles (≤{PER_SLIDE} per slide) from {len(slides)} training-split slides, "
           f"{tiles.patient_id.nunique()} patients", flush=True)
     rng = np.random.default_rng(0)

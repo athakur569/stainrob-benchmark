@@ -274,6 +274,18 @@ Recorded in the [analysis plan](docs/analysis_plan.md) and the research log:
 - [`wsidrift`](https://pypi.org/project/wsidrift/) — the label-free Tier 1 / Tier 2 monitor,
   as a separate package (PyPI 0.1.1; slide-level calibration is on its main branch, unreleased).
 
+**Which wsidrift a result used.** This repository imports wsidrift from source, not from PyPI: set `WSIDRIFT_SRC`
+to a wsidrift checkout's `src/` (default `~/Desktop/code/wsidrift/src`). Scripts print the version and commit they
+imported (`stain_benchmark.evaluation.analysis.wsidrift_source`), and each result records it. To reproduce one:
+
+```bash
+git clone https://github.com/athakur569/wsidrift && git -C wsidrift checkout <commit>
+export WSIDRIFT_SRC=$PWD/wsidrift/src
+```
+
+The real-tile null check (`scripts/null_check_tile_vs_slide.py`, ISS-039) gives 82% / 100% tile-level and 5% / 2%
+with slide groups at wsidrift `d0739e4` (6 Nov 2026), as at the code first used.
+
 ## License
 
 MIT. Author: Abhishek Thakur.

@@ -25,6 +25,25 @@ if _WSIDRIFT not in sys.path:
 from wsidrift.monitor.divergence import Tier1Monitor  # noqa: E402
 from wsidrift.monitor.embedding import Tier2Monitor  # noqa: E402
 
+
+
+def wsidrift_source() -> str:
+    """Which wsidrift a run imports: version, location and git commit, marked if its src/ has uncommitted changes."""
+    import subprocess
+    from pathlib import Path
+
+    import wsidrift
+    root = Path(wsidrift.__file__).resolve().parents[2]
+    try:
+        git = lambda *a: subprocess.run(["git", "-C", str(root), *a], capture_output=True, text=True,  # noqa: E731
+                                        check=True).stdout.strip()
+        where = f"commit {git('rev-parse', 'HEAD')}" + (" with uncommitted changes in src/"
+                                                         if git("status", "--porcelain", "--", "src") else "")
+    except (OSError, subprocess.CalledProcessError):
+        where = "not a git checkout"
+    return f"wsidrift {getattr(wsidrift, '__version__', '?')} from {root} ({where})"
+
+
 TILES_PER_SLIDE = 8
 N_COMPONENTS = 50
 ALPHA = 0.05

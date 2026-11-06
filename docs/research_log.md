@@ -206,7 +206,9 @@ Status: **RESOLVED** · **OPEN** (work pending) · **DECISION** (design choice s
   slide-level tests 6% and 11%. On real tiles (CAMELYON17 training slides split into random halves, no
   shift, 40 splits, nominal 10%): tile-level Tier 1 alarmed in 82% (pixel statistics) and 100% (DenseNet-121
   features) of splits; slide-level in 5% and 2% (`scripts/null_check_tile_vs_slide.py`, from the training-split
-  features of `scripts/extract_tier1.py`; rerun 5 Nov with the same result). The version of the monitor package
+  features of `scripts/extract_tier1.py`). Reruns with the same result: 5 Nov, with wsidrift `546845b`'s Tier 1 (a
+  working tree whose only uncommitted changes, to the pipeline and validity modules, this script does not use); 6
+  Nov, with wsidrift `d0739e4` (clean checkout of public main), which the script now prints. The version of the monitor package
   released on PyPI (0.1.1) still uses tile-level calibration.
 
 ### ISS-040 · reproducibility · Worker seeding replayed augmentations every epoch
