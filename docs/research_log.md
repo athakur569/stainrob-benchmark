@@ -343,11 +343,13 @@ Status: **RESOLVED** · **OPEN** (work pending) · **DECISION** (design choice s
   version (v0.2, `docs/v0.2/plan.md`) to monitors that watch the deployed model instead of the inputs.
 
 ### ISS-053 · data · CAMELYON17's "patients" are artificial groupings of five slides
-- **Found (4 Nov, from Bándi et al. 2019 §II.C and Litjens et al. 2018):** to balance pN stage across centres, the
-  organisers grouped five slides *from different people* of one hospital into each "patient". The 1,000 slides come from
-  711 lymph node resections, so some real people contribute several slides — necessarily to different artificial
-  patients — and can fall on both sides of a split within a hospital. Real identifiers are not public. A held-out
-  hospital shares no real people with training.
+- **Found (4 Nov, from Bándi et al. 2019 and Litjens et al. 2018; sources rechecked 6 Nov):** to balance pN stage across
+  centres, the organisers grouped five slides *from different people* of one hospital into each "patient" (Bándi §II.C,
+  p. 553). Each hospital gave 200 of the 1,000 slides (Litjens Table 4), from 129–168 lymph node resections per hospital
+  (Bándi §II.A, p. 551, lists 130, 144, 129, 168 and 140: 711 in all by our sum; the paper prints no total). The slides
+  outnumber the resections by at least 289, so some real people contribute several slides — necessarily to different
+  artificial patients — and can fall on both sides of a split within a hospital. Real identifiers are not public. A
+  held-out hospital shares no real people with training.
 - **Consequences:** (1) ISS-046's explanation ("a patient's slides resemble each other") cannot be biological; the rule —
   cluster by the unit that differs between batches — stands, and P1e tests the mechanism. (2) In-domain performance may
   be flattered by real-person overlap, so the real-arm gap may be overstated and null false-alarm rates optimistic for
