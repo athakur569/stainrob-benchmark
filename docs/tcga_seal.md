@@ -16,3 +16,23 @@ design files rebuild byte for byte from `scripts/tcga_design.py` and the label a
 commit. Before the lock, no calibration-role, in-domain or held-out-pool patient had been scored, no pool had been
 scored as held out, and no monitor had been run on TCGA; the plan's status paragraph lists what was done. Changes after
 the lock are numbered deviations in `docs/tcga/deviations.md` on the same branch, and each is sealed here when it is made.
+
+## OSF registration (added 7 Nov 2026)
+
+The locked plan is registered on OSF as a Secondary Data Preregistration: **https://osf.io/mz3ph**, registered on
+7 Nov 2026 (10:01 as OSF displays it) and pending OSF's 48-hour approval when this entry was written. It is embargoed
+until 2028-05-07 at the latest and opens earlier, with the results paper. OSF keeps the uploaded files in an
+associated project, https://osf.io/a45gx. The five attached files:
+
+| Attached file | SHA-256 |
+|---|---|
+| `plan.md` (the locked plan, identical to `docs/tcga/plan.md` above) | `e0019b37ae4c818ab03e40ffcbd8a3811332c8b1a08d7a34dfd35d5ed163337d` |
+| `plan.pdf` (a rendering of `plan.md`) | `4d3ef77277b997fd119c1aa214fa0cd3f5a841ed6e80ad7d49516e06e6c28de9` |
+| `seal.txt` (the upload set's seal record) | `9d1e27bd3218f766f265efd36392f9a9945f29232220205a57c053c1fd464efe` |
+| `design_files.zip` (`design_pools.csv`, `design_patients.csv`, `design_halvings.csv`) | `fcdfebc90ad72f6afe40cf1e5d516c0f8df8651686215e3ebf3585e4d4a7dffd` |
+| `slides_and_doses.zip` (`manifest_dx.csv`, `doses.txt`) | `47a03c6874f8a822d5e52a7d5a378a1bada4974ca4e978f5f03d6b29fffc213d` |
+
+OSF allowed five files, so the design files and the slide and dose lists were attached as two archives. Each archive
+was extracted on 7 Nov: the three design files are byte-identical to the files sealed above, and every member of both
+archives matches the SHA-256 listed in `seal.txt` (`manifest_dx.csv` is `data/tcga_brca/manifest_dx.csv` at the lock
+commit, the slide file list; `doses.txt` lists the 17 doses with their committed strengths).
