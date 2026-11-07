@@ -36,3 +36,9 @@ OSF allowed five files, so the design files and the slide and dose lists were at
 was extracted on 7 Nov: the three design files are byte-identical to the files sealed above, and every member of both
 archives matches the SHA-256 listed in `seal.txt` (`manifest_dx.csv` is `data/tcga_brca/manifest_dx.csv` at the lock
 commit, the slide file list; `doses.txt` lists the 17 doses with their committed strengths).
+
+## Deviations and clarifications (on branch `tcga`)
+
+| Entry | File | Commit | Committed | SHA-256 of the file at that commit |
+|---|---|---|---|---|
+| D1, a clarification: the batch design, fixed before any monitor run, and before any model was trained on the study's roles | `docs/tcga/deviations.md` | `21984c111b35896f5124e0789d8694b3ab48c2a2` | 2026-11-07T10:18:35-05:00 | `26bd224e551a8c64953cfe1db4da58e3a356430a5f507d5553a4ee5b7797181a` |
