@@ -43,6 +43,7 @@ commit, the slide file list; `doses.txt` lists the 17 doses with their committed
 |---|---|---|---|---|
 | D1, a clarification: the batch design, fixed before any monitor run, and before any model was trained on the study's roles | `docs/tcga/deviations.md` | `21984c111b35896f5124e0789d8694b3ab48c2a2` | 2026-11-07T10:18:35-05:00 | `26bd224e551a8c64953cfe1db4da58e3a356430a5f507d5553a4ee5b7797181a` |
 | D1 and D2, a clarification: the stream design, fixed before any stream run, and before any model was trained on the study's roles | `docs/tcga/deviations.md` | `990fe878cd24ea5b84e9618a037d9c20fb6de876` | 2026-11-07T10:41:00-05:00 | `3a7b6ffc0b96ac466a502bd83ddd5e6af88876594cbe95da42b02ee53ce73539` |
+| D1 to D3, a clarification: the common operating point, H3's display, per-site readings, the permutation unit, refusals and the wsidrift pin, fixed before any monitor run and before any model was trained on the study's roles | `docs/tcga/deviations.md` | `dde788a3514e6c71447ececfac65871218ced693` | 2026-11-07T10:58:21-05:00 | `710ffcacb20c9e471bc87ae4412d2c5e04822c1363c79d617bed6d4bab48d24b` |
 
 ## Batch files (fixed by D1, generated before any monitor run)
 
