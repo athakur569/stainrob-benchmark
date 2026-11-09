@@ -63,6 +63,7 @@ commit, the slide file list; `doses.txt` lists the 17 doses with their committed
 | The run's record (D12): er_back.sh changed; d12_rerun.sh and d12_compare.py added | `docs/tcga/run/README.md` | `69c792c570a0078be2d7a834a74c0766e1e5aef0` | 2026-11-09T09:46:23-05:00 | `9ba0b135fe51c28409c2528c34f986ec50d5ad3df110e43cf8b7e28b31c903a6` |
 | D12's rerun check: the ResNet-50 arm's readings and A4 report file hashes, taken before the rerun | `docs/tcga/run/d12_rerun_check.txt` | `69c792c570a0078be2d7a834a74c0766e1e5aef0` | 2026-11-09T09:46:23-05:00 | `b297d7e51d079640b56494493805f76664f8de358787c14ec77048ad916b8604` |
 | D12's rerun check, completed: 24 of 31 files identical; the other 7 differ only in D12's labels and marks | `docs/tcga/run/d12_rerun_check.txt` | `939948824b76f4c4212c887b2736c85412ced38c` | 2026-11-09T10:14:29-05:00 | `c482eb51e856fae2d2f9e51f1c320adce891fa0478d2dcaf5da4440410daa235` |
+| The run's record (D12): the comparison's first draft would have passed a rerun that changed nothing; the end-state check that closed it | `docs/tcga/run/README.md` | `e67a514e78ce971c418384800603056a45e3d744` | 2026-11-09T10:17:21-05:00 | `8fe79683902fc0ebc263921a072bd8474aae665acf56fd52e39a7d661e5f33b7` |
 
 ## Batch files (fixed by D1, generated before any monitor run)
 
