@@ -59,6 +59,9 @@ commit, the slide file list; `doses.txt` lists the 17 doses with their committed
 | The run's record (D11): er_back.sh changed; the wrapper as fixed and as it ran | `docs/tcga/run/README.md` | `fe569134399f2fe117d739c3d0634ab5b68b5fef` | 2026-11-09T08:38:49-05:00 | `2c61b1b42ab6b2b81c37a9190f8a58caf2fa6eab1eca2661e8c9e730d392b895` |
 | D11's rerun check: the first grading's file hashes, taken before the rerun | `docs/tcga/run/d11_rerun_check.txt` | `fe569134399f2fe117d739c3d0634ab5b68b5fef` | 2026-11-09T08:38:49-05:00 | `64fee83383a587b7bc7633caa06d89fcbfa01cbdfe983d5a14ed08e7b7649a4c` |
 | D11's rerun check, completed: all 17 files identical after the rerun | `docs/tcga/run/d11_rerun_check.txt` | `aa0a68610cf643fb5921d36c685019368a5bc77f` | 2026-11-09T08:56:40-05:00 | `59ba55e4d90f8fd1ed6a4f09f9d366d6402b905007f0943132d244ddfbf9a0d4` |
+| D1 to D12, **after a result**: every H1 label, the borderline reading's included, reads "not evaluable" on an arm whose H1 is not evaluable, and the A4 report marks that arm's "better than S1" readings as descriptive | `docs/tcga/deviations.md` | `69c792c570a0078be2d7a834a74c0766e1e5aef0` | 2026-11-09T09:46:23-05:00 | `3fc633469e3ea9e3e01432f65a33a97f0b7736a9174219115d4755b053d75203` |
+| The run's record (D12): er_back.sh changed; d12_rerun.sh and d12_compare.py added | `docs/tcga/run/README.md` | `69c792c570a0078be2d7a834a74c0766e1e5aef0` | 2026-11-09T09:46:23-05:00 | `9ba0b135fe51c28409c2528c34f986ec50d5ad3df110e43cf8b7e28b31c903a6` |
+| D12's rerun check: the ResNet-50 arm's readings and A4 report file hashes, taken before the rerun | `docs/tcga/run/d12_rerun_check.txt` | `69c792c570a0078be2d7a834a74c0766e1e5aef0` | 2026-11-09T09:46:23-05:00 | `b297d7e51d079640b56494493805f76664f8de358787c14ec77048ad916b8604` |
 
 ## Batch files (fixed by D1, generated before any monitor run)
 
