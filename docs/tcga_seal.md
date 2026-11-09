@@ -55,6 +55,9 @@ commit, the slide file list; `doses.txt` lists the 17 doses with their committed
 | The run's record (D9): er_back.sh's readings stage calls the paired view | `docs/tcga/run/README.md` | `c01afdd604ec38e6cff2f1f8b23f4199e8d7b289` | 2026-11-09T06:04:24-05:00 | `476fe2b76bbc9661d501fdc36deac08a991eada5a9f2df90d6bb0bdc6e7482f3` |
 | D1 to D10, **after a result**: the A3 stage checks that doses caught by QC in full have no graded rows | `docs/tcga/deviations.md` | `537adc94f3dffbb7ebb51ddf073f94fab6f2e77e` | 2026-11-09T06:07:16-05:00 | `176c67f86e9f7d8e39dd286326a4bbb48fcea1d311ff1dcaf4d4fc8f33cfb247` |
 | The run's record (D10): a3_summary.py changed | `docs/tcga/run/README.md` | `537adc94f3dffbb7ebb51ddf073f94fab6f2e77e` | 2026-11-09T06:07:16-05:00 | `4c9c9e6c2b596b04b5910e4b590f2dd8bd5a18ad2e5d16a16306c62f395f5b67` |
+| D1 to D11, **after a result**: the run wrapper's false failure on a silent step, fixed; the arm resumed at grading | `docs/tcga/deviations.md` | `fe569134399f2fe117d739c3d0634ab5b68b5fef` | 2026-11-09T08:38:49-05:00 | `01455bac135473f0ac54627df769d4a344eb09fb6c08707b59742059d1f1bab5` |
+| The run's record (D11): er_back.sh changed; the wrapper as fixed and as it ran | `docs/tcga/run/README.md` | `fe569134399f2fe117d739c3d0634ab5b68b5fef` | 2026-11-09T08:38:49-05:00 | `2c61b1b42ab6b2b81c37a9190f8a58caf2fa6eab1eca2661e8c9e730d392b895` |
+| D11's rerun check: the first grading's file hashes, taken before the rerun | `docs/tcga/run/d11_rerun_check.txt` | `fe569134399f2fe117d739c3d0634ab5b68b5fef` | 2026-11-09T08:38:49-05:00 | `64fee83383a587b7bc7633caa06d89fcbfa01cbdfe983d5a14ed08e7b7649a4c` |
 
 ## Batch files (fixed by D1, generated before any monitor run)
 
