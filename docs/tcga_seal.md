@@ -64,6 +64,8 @@ commit, the slide file list; `doses.txt` lists the 17 doses with their committed
 | D12's rerun check: the ResNet-50 arm's readings and A4 report file hashes, taken before the rerun | `docs/tcga/run/d12_rerun_check.txt` | `69c792c570a0078be2d7a834a74c0766e1e5aef0` | 2026-11-09T09:46:23-05:00 | `b297d7e51d079640b56494493805f76664f8de358787c14ec77048ad916b8604` |
 | D12's rerun check, completed: 24 of 31 files identical; the other 7 differ only in D12's labels and marks | `docs/tcga/run/d12_rerun_check.txt` | `939948824b76f4c4212c887b2736c85412ced38c` | 2026-11-09T10:14:29-05:00 | `c482eb51e856fae2d2f9e51f1c320adce891fa0478d2dcaf5da4440410daa235` |
 | The run's record (D12): the comparison's first draft would have passed a rerun that changed nothing; the end-state check that closed it | `docs/tcga/run/README.md` | `e67a514e78ce971c418384800603056a45e3d744` | 2026-11-09T10:17:21-05:00 | `8fe79683902fc0ebc263921a072bd8474aae665acf56fd52e39a7d661e5f33b7` |
+| D1 to D13, **after a result**: Describe (H9) gets a stage in the run script, label-free and model-free; its named kinds of damage are suggestions only in the report (TCGA's D13, not the rehearsal's D13 cited in plan §8) | `docs/tcga/deviations.md` | `0a532e9065931a7ef837f37c3b2f6d0aa1b0ce17` | 2026-11-09T10:22:54-05:00 | `56bdd95ceadd530d9d56b8bc3c98026a5e4041237c403dad383a6acb433fd7e6` |
+| The run's record (D13): er_back.sh's describe stage | `docs/tcga/run/README.md` | `0a532e9065931a7ef837f37c3b2f6d0aa1b0ce17` | 2026-11-09T10:22:54-05:00 | `07752d88d25a8b25781a1661a342696d8bf4bbebb5ca4511279dd3d7560a04eb` |
 
 ## Batch files (fixed by D1, generated before any monitor run)
 
