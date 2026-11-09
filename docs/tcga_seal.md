@@ -49,6 +49,8 @@ commit, the slide file list; `doses.txt` lists the 17 doses with their committed
 | D1 to D6, a clarification: Tier 1a moved to just after training and before any reading, and the rules for any change after the first ER result, fixed while the models were training and before any model was graded | `docs/tcga/deviations.md` | `b43f4fb3b26b9135d7a0739e4c15010d53d2bc34` | 2026-11-07T18:38:07-05:00 | `1e77819d840f479d8cab5f0d58c6d29c2f8dafc1071044e0475261a93a18dd52` |
 | D1 to D7, **after a result** (the gate count, 2026-11-08 02:25:54): each arm's run staged so its evaluability read is checked before any H1 output is opened, display only | `docs/tcga/deviations.md` | `333c01c054157a8dba980a465e914e930bf98a15` | 2026-11-08T02:33:15-05:00 | `bbca4c4eaf426d472267eaff8ea6fcaaa09a1ad4962dbe7deaefb54e09a2f2ad` |
 | The run's record (D7): the seven operational scripts' last-modified times and SHA-256, the scripts committed unedited beside it | `docs/tcga/run/README.md` | `333c01c054157a8dba980a465e914e930bf98a15` | 2026-11-08T02:33:15-05:00 | `f56dc47b8a8e70f6c79eb9c717959d895c4446c8d34b37a676b447b4a07d41a1` |
+| D1 to D8, **after a result**: each arm's dose scoring limited to that arm's own runs, with a completeness check by slide id after scoring | `docs/tcga/deviations.md` | `8fb30e985a5fabd3c08d9b6bdabfc3c894c67ce8` | 2026-11-09T05:36:52-05:00 | `e2aa56dd5f5eda78e4d595bc7eda950814fc2b960449fe9c98c884382353979e` |
+| The run's record (D8): er_back.sh changed, score_check.py added | `docs/tcga/run/README.md` | `8fb30e985a5fabd3c08d9b6bdabfc3c894c67ce8` | 2026-11-09T05:36:52-05:00 | `f0aa591b7a833775174844751546bc3ee933153469a265f59a30f739554db1e6` |
 
 ## Batch files (fixed by D1, generated before any monitor run)
 
