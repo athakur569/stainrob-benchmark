@@ -58,6 +58,7 @@ commit, the slide file list; `doses.txt` lists the 17 doses with their committed
 | D1 to D11, **after a result**: the run wrapper's false failure on a silent step, fixed; the arm resumed at grading | `docs/tcga/deviations.md` | `fe569134399f2fe117d739c3d0634ab5b68b5fef` | 2026-11-09T08:38:49-05:00 | `01455bac135473f0ac54627df769d4a344eb09fb6c08707b59742059d1f1bab5` |
 | The run's record (D11): er_back.sh changed; the wrapper as fixed and as it ran | `docs/tcga/run/README.md` | `fe569134399f2fe117d739c3d0634ab5b68b5fef` | 2026-11-09T08:38:49-05:00 | `2c61b1b42ab6b2b81c37a9190f8a58caf2fa6eab1eca2661e8c9e730d392b895` |
 | D11's rerun check: the first grading's file hashes, taken before the rerun | `docs/tcga/run/d11_rerun_check.txt` | `fe569134399f2fe117d739c3d0634ab5b68b5fef` | 2026-11-09T08:38:49-05:00 | `64fee83383a587b7bc7633caa06d89fcbfa01cbdfe983d5a14ed08e7b7649a4c` |
+| D11's rerun check, completed: all 17 files identical after the rerun | `docs/tcga/run/d11_rerun_check.txt` | `aa0a68610cf643fb5921d36c685019368a5bc77f` | 2026-11-09T08:56:40-05:00 | `59ba55e4d90f8fd1ed6a4f09f9d366d6402b905007f0943132d244ddfbf9a0d4` |
 
 ## Batch files (fixed by D1, generated before any monitor run)
 
