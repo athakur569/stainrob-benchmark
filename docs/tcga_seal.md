@@ -51,6 +51,8 @@ commit, the slide file list; `doses.txt` lists the 17 doses with their committed
 | The run's record (D7): the seven operational scripts' last-modified times and SHA-256, the scripts committed unedited beside it | `docs/tcga/run/README.md` | `333c01c054157a8dba980a465e914e930bf98a15` | 2026-11-08T02:33:15-05:00 | `f56dc47b8a8e70f6c79eb9c717959d895c4446c8d34b37a676b447b4a07d41a1` |
 | D1 to D8, **after a result**: each arm's dose scoring limited to that arm's own runs, with a completeness check by slide id after scoring | `docs/tcga/deviations.md` | `8fb30e985a5fabd3c08d9b6bdabfc3c894c67ce8` | 2026-11-09T05:36:52-05:00 | `e2aa56dd5f5eda78e4d595bc7eda950814fc2b960449fe9c98c884382353979e` |
 | The run's record (D8): er_back.sh changed, score_check.py added | `docs/tcga/run/README.md` | `8fb30e985a5fabd3c08d9b6bdabfc3c894c67ce8` | 2026-11-09T05:36:52-05:00 | `f0aa591b7a833775174844751546bc3ee933153469a265f59a30f739554db1e6` |
+| D1 to D9, **after a result**, descriptive only: the exactly paired view of doses that QC empties in part, and the removed slides' ER and type mix | `docs/tcga/deviations.md` | `c01afdd604ec38e6cff2f1f8b23f4199e8d7b289` | 2026-11-09T06:04:24-05:00 | `414f236c0fbec45c087828ff0ad9272bc0e9a121b18b036597638dfcba480792` |
+| The run's record (D9): er_back.sh's readings stage calls the paired view | `docs/tcga/run/README.md` | `c01afdd604ec38e6cff2f1f8b23f4199e8d7b289` | 2026-11-09T06:04:24-05:00 | `476fe2b76bbc9661d501fdc36deac08a991eada5a9f2df90d6bb0bdc6e7482f3` |
 
 ## Batch files (fixed by D1, generated before any monitor run)
 
