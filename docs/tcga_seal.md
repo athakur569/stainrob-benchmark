@@ -53,6 +53,8 @@ commit, the slide file list; `doses.txt` lists the 17 doses with their committed
 | The run's record (D8): er_back.sh changed, score_check.py added | `docs/tcga/run/README.md` | `8fb30e985a5fabd3c08d9b6bdabfc3c894c67ce8` | 2026-11-09T05:36:52-05:00 | `f0aa591b7a833775174844751546bc3ee933153469a265f59a30f739554db1e6` |
 | D1 to D9, **after a result**, descriptive only: the exactly paired view of doses that QC empties in part, and the removed slides' ER and type mix | `docs/tcga/deviations.md` | `c01afdd604ec38e6cff2f1f8b23f4199e8d7b289` | 2026-11-09T06:04:24-05:00 | `414f236c0fbec45c087828ff0ad9272bc0e9a121b18b036597638dfcba480792` |
 | The run's record (D9): er_back.sh's readings stage calls the paired view | `docs/tcga/run/README.md` | `c01afdd604ec38e6cff2f1f8b23f4199e8d7b289` | 2026-11-09T06:04:24-05:00 | `476fe2b76bbc9661d501fdc36deac08a991eada5a9f2df90d6bb0bdc6e7482f3` |
+| D1 to D10, **after a result**: the A3 stage checks that doses caught by QC in full have no graded rows | `docs/tcga/deviations.md` | `537adc94f3dffbb7ebb51ddf073f94fab6f2e77e` | 2026-11-09T06:07:16-05:00 | `176c67f86e9f7d8e39dd286326a4bbb48fcea1d311ff1dcaf4d4fc8f33cfb247` |
+| The run's record (D10): a3_summary.py changed | `docs/tcga/run/README.md` | `537adc94f3dffbb7ebb51ddf073f94fab6f2e77e` | 2026-11-09T06:07:16-05:00 | `4c9c9e6c2b596b04b5910e4b590f2dd8bd5a18ad2e5d16a16306c62f395f5b67` |
 
 ## Batch files (fixed by D1, generated before any monitor run)
 
