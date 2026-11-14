@@ -69,6 +69,8 @@ commit, the slide file list; `doses.txt` lists the 17 doses with their committed
 | The run's record: both arms' A3 as checked (ResNet-50 not evaluable; Virchow evaluable, with no slack on the harmless side and blur_3's partial QC noted) | `docs/tcga/run/README.md` | `b6d994eb82836d78fe9f86a99cc501e8d80e3b05` | 2026-11-14T10:13:50-05:00 | `c64dbc7ceffded10e24a974d457b0d053e2554e168a15f06d65562bc2beddfd5` |
 | The Virchow arm's readings, Describe and primary stage: the SHA-256 of the 49 files they wrote, taken before any content but primary.json was opened | `docs/tcga/run/virchow_readings_sha256.txt` | `673c139c3bad2686e8f88189cafe67b49439de19` | 2026-11-14T10:38:13-05:00 | `767ab0a8743f5e93bbd6e2dde9b1588e2086796fd4887194d64971eddbe0b2c6` |
 | The run's record: the Virchow manifest named | `docs/tcga/run/README.md` | `673c139c3bad2686e8f88189cafe67b49439de19` | 2026-11-14T10:38:13-05:00 | `d06f6c801a3a6d05d6fbf2bd8f6409c4f49f3b0342f826a408590e73ba793a8c` |
+| D1 to D14, **after a result**: each monitor's own rates with intervals from the same draws (descriptive); pool-class counts over gate-passing runs (ER's readings not rerun) | `docs/tcga/deviations.md` | `021a79d19482e87f669e0c957469ba99c1fe6ff7` | 2026-11-14T10:49:31-05:00 | `eef5c22a50c41557e064029ae165ecc1e970a94674bf180caac1020dcd7e5803` |
+| The run's record (D14): d14a_run.sh added | `docs/tcga/run/README.md` | `021a79d19482e87f669e0c957469ba99c1fe6ff7` | 2026-11-14T10:49:31-05:00 | `ad551398e744391c5b836b951da4834b31f9a51f057c0da8c160071abbdae73b` |
 
 ## Batch files (fixed by D1, generated before any monitor run)
 
