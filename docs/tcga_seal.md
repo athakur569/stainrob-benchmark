@@ -67,6 +67,8 @@ commit, the slide file list; `doses.txt` lists the 17 doses with their committed
 | D1 to D13, **after a result**: Describe (H9) gets a stage in the run script, label-free and model-free; its named kinds of damage are suggestions only in the report (TCGA's D13, not the rehearsal's D13 cited in plan §8) | `docs/tcga/deviations.md` | `0a532e9065931a7ef837f37c3b2f6d0aa1b0ce17` | 2026-11-09T10:22:54-05:00 | `56bdd95ceadd530d9d56b8bc3c98026a5e4041237c403dad383a6acb433fd7e6` |
 | The run's record (D13): er_back.sh's describe stage | `docs/tcga/run/README.md` | `0a532e9065931a7ef837f37c3b2f6d0aa1b0ce17` | 2026-11-09T10:22:54-05:00 | `07752d88d25a8b25781a1661a342696d8bf4bbebb5ca4511279dd3d7560a04eb` |
 | The run's record: both arms' A3 as checked (ResNet-50 not evaluable; Virchow evaluable, with no slack on the harmless side and blur_3's partial QC noted) | `docs/tcga/run/README.md` | `b6d994eb82836d78fe9f86a99cc501e8d80e3b05` | 2026-11-14T10:13:50-05:00 | `c64dbc7ceffded10e24a974d457b0d053e2554e168a15f06d65562bc2beddfd5` |
+| The Virchow arm's readings, Describe and primary stage: the SHA-256 of the 49 files they wrote, taken before any content but primary.json was opened | `docs/tcga/run/virchow_readings_sha256.txt` | `673c139c3bad2686e8f88189cafe67b49439de19` | 2026-11-14T10:38:13-05:00 | `767ab0a8743f5e93bbd6e2dde9b1588e2086796fd4887194d64971eddbe0b2c6` |
+| The run's record: the Virchow manifest named | `docs/tcga/run/README.md` | `673c139c3bad2686e8f88189cafe67b49439de19` | 2026-11-14T10:38:13-05:00 | `d06f6c801a3a6d05d6fbf2bd8f6409c4f49f3b0342f826a408590e73ba793a8c` |
 
 ## Batch files (fixed by D1, generated before any monitor run)
 
