@@ -66,6 +66,7 @@ commit, the slide file list; `doses.txt` lists the 17 doses with their committed
 | The run's record (D12): the comparison's first draft would have passed a rerun that changed nothing; the end-state check that closed it | `docs/tcga/run/README.md` | `e67a514e78ce971c418384800603056a45e3d744` | 2026-11-09T10:17:21-05:00 | `8fe79683902fc0ebc263921a072bd8474aae665acf56fd52e39a7d661e5f33b7` |
 | D1 to D13, **after a result**: Describe (H9) gets a stage in the run script, label-free and model-free; its named kinds of damage are suggestions only in the report (TCGA's D13, not the rehearsal's D13 cited in plan §8) | `docs/tcga/deviations.md` | `0a532e9065931a7ef837f37c3b2f6d0aa1b0ce17` | 2026-11-09T10:22:54-05:00 | `56bdd95ceadd530d9d56b8bc3c98026a5e4041237c403dad383a6acb433fd7e6` |
 | The run's record (D13): er_back.sh's describe stage | `docs/tcga/run/README.md` | `0a532e9065931a7ef837f37c3b2f6d0aa1b0ce17` | 2026-11-09T10:22:54-05:00 | `07752d88d25a8b25781a1661a342696d8bf4bbebb5ca4511279dd3d7560a04eb` |
+| The run's record: both arms' A3 as checked (ResNet-50 not evaluable; Virchow evaluable, with no slack on the harmless side and blur_3's partial QC noted) | `docs/tcga/run/README.md` | `b6d994eb82836d78fe9f86a99cc501e8d80e3b05` | 2026-11-14T10:13:50-05:00 | `c64dbc7ceffded10e24a974d457b0d053e2554e168a15f06d65562bc2beddfd5` |
 
 ## Batch files (fixed by D1, generated before any monitor run)
 
