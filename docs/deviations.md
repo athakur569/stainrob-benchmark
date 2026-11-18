@@ -1,5 +1,7 @@
 # Deviations from the analysis plan
 
+Session names replaced with role placeholders on 18 Nov 2026; content otherwise unchanged; earlier versions are in the history.
+
 The analysis plan (`docs/analysis_plan.md`) was committed in `927e44b` on 2 November 2026 at
 11:50 EST, before any test-set result existed. It is not edited afterwards. Every later change,
 clarification or addition is recorded here with its date and reason, and reported in the paper.
@@ -27,7 +29,7 @@ magnitude, which measure still orders the families by harm?
   is a property of the design, not an empirical finding, and is stated as such. The informative comparison
   is between the monitor signals and 1 − SSIM, which does vary across families at a fixed ΔE.
 
-**Raised by:** career-ops; recorded by the research chat. No test result had been seen when this was written.
+**Raised by:** the review session; recorded by the analysis session. No test result had been seen when this was written.
 
 ## D2 · 2026-11-02 · Which statistic is "the" signal, and a tractable computation (specified before any result)
 
@@ -50,7 +52,7 @@ result exists.
 **Why.** Without this, the choice of statistic could be made after seeing which one looks better. Fixing it
 first removes that freedom.
 
-**Recorded by:** the research chat. No test result had been seen when this was written.
+**Recorded by:** the analysis session. No test result had been seen when this was written.
 
 ## D3 · 2026-11-02 · Alarms on the real arm; Tier 2 null check (specified before any monitor result)
 
@@ -65,7 +67,7 @@ first removes that freedom.
    model, and repeating it for all 60 runs adds nothing to a calibration check.
 
 **Why.** Fold 0's real-arm ΔG (run log) includes 0: a harmless shift on real data, the counterpart of the
-synthetic harmless doses. Raised by career-ops; specified here before any monitor statistic on a test tile
+synthetic harmless doses. Raised by the review session; specified here before any monitor statistic on a test tile
 had been computed.
 
 ## D4 · 2026-11-02 · Which Tier 1 enters the AND rule (specified before any monitor result)
@@ -77,7 +79,7 @@ Tier 1; Mahalanobis, energy for Tier 2), as implemented in wsidrift with slide c
 
 **Why.** DR-004 and DR-018 make Tier 1b the primary input-level tier; the H3 prediction expects Tier 1a to
 over-weight stain, so making it primary for alarms would build the expected failure into the headline
-rule. Recorded by the research chat before any monitor statistic on a test tile was computed.
+rule. Recorded by the analysis session before any monitor statistic on a test tile was computed.
 
 ## D5 · 2026-11-02 · How folds are labelled by their ΔG, and how alarms on them are scored (before folds 1–4)
 
@@ -102,7 +104,7 @@ negative and every upper bound ≤ +0.009 → "no harm detected — clean"; an a
 folds 1–4. They are round values, not fitted ones, and fold 0 meets them with margin (point estimate −0.019
 against ≤ 0.01; every seed's upper bound ≤ +0.009 against ≤ 0.03).
 
-**Raised by:** career-ops. Recorded by the research chat before folds 1–4 had any result.
+**Raised by:** the review session. Recorded by the analysis session before folds 1–4 had any result.
 
 ## D6 · 2026-11-02 · Combining the three seeds into one alarm (specified before any monitor result)
 
@@ -112,7 +114,7 @@ majority (at least 2 of 3) of its seeds alarm**; per-seed counts are reported al
 the model and has one decision per fold and batch. Continuous signals are averaged over seeds (Tier 2 Mahalanobis).
 
 **Why.** Seeds are a nuisance (ISS-036); a majority vote treats them symmetrically without letting one seed decide.
-Recorded by the research chat before any monitor statistic on a test tile was computed.
+Recorded by the analysis session before any monitor statistic on a test tile was computed.
 
 ## D7 · 2026-11-02 · When the calibration slope does not exist (before any calibration-slope result was read)
 

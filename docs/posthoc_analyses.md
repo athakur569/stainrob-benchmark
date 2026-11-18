@@ -1,5 +1,7 @@
 # Post-hoc analyses — specified before they are run
 
+Session names replaced with role placeholders on 18 Nov 2026; content otherwise unchanged; earlier versions are in the history.
+
 The pre-registered analysis (`docs/analysis_plan.md`, commit `927e44b`) is run and reported as written. The
 end-to-end check on fold 0 (E1) exposed three design problems (research log ISS-044, ISS-045, ISS-046). The
 analyses below address them. They are **post hoc**: they were designed after seeing fold-0 monitor results.
@@ -7,7 +9,7 @@ To limit the freedom that gives, each is written down and committed here before 
 each is reported **beside** the pre-registered result, never in place of it.
 
 Status column: *specified* = written, not run · *run (training tiles only)* = needs no test data ·
-*awaiting decision* = needs test tiles; runs only once Abhi approves. P2–P5 were approved by Abhi on 3 Nov 2026.
+*awaiting decision* = needs test tiles; runs only once the author approves. P2–P5 were approved by the author on 3 Nov 2026.
 
 | ID | Addresses | What | Data it reads | Status |
 |---|---|---|---|---|
@@ -54,7 +56,7 @@ DenseNet-121 0.058 (0.035–0.080) → 0.032 (0.010–0.055); ResNet-50 0.543 (0
 With slide clusters, pooled: 0.21–0.43 for every Tier 1 row; slide clusters remain wrong whatever the projection.
 Pooled projection with patient clusters holds α for every tier.
 
-**P1c — added before running (raised by career-ops):** a third arm, `--fit-on external`: the projection is fitted on a
+**P1c — added before running (raised by the review session):** a third arm, `--fit-on external`: the projection is fitted on a
 set disjoint from both batches, so it does not depend on the split at all. To stay on training tiles, each null split
 divides the training patients into thirds (projection / reference / deployment). In P3 the external set is the fold's
 training tiles, disjoint from `test_in` and `test_cross`. Principle behind P1b and P1c: a permutation test is exact
@@ -65,7 +67,7 @@ is not. The arm that holds α is chosen by power under shift in P3, not by false
 (0.010–0.050); ResNet-50 0.021 (0.010–0.040). Holds α for every tier. Lower than P1b, but on thirds rather than halves;
 P1d gives the matched contrast.
 
-**P1d — added before running (raised by career-ops):** P1c's thirds give each side about a third of the patients, P1/P1b
+**P1d — added before running (raised by the review session):** P1c's thirds give each side about a third of the patients, P1/P1b
 halves. For a matched contrast, the reference-fitted and pooled arms are rerun on the **same** thirds as P1c (`--thirds`;
 the projection third unused), so the three arms differ only in where the projection is fitted. Headline rates stay
 those of P1/P1b (halves); P1d is for the contrast.
@@ -187,7 +189,7 @@ Independence of the two Tier 1 faults (P1–P1d): slide clusters false-alarm at 
 with patient clusters the reference-fitted projection fails in high dimension (ResNet-50 0.45–0.54). For the
 high-dimensional tiers both fixes are needed; for Tier 1a, which has no projection, patient clusters alone suffice.
 
-**Reading rule for P3's real arm (added 3 Nov before P3 ran; raised by career-ops).** The two hospitals with the
+**Reading rule for P3's real arm (added 3 Nov before P3 ran; raised by the review session).** The two hospitals with the
 largest drops (2 and 4) are also the two with different scanners, and their drops are carried by a few patients whose
 misses persist even when their hospital is in training (P4; patient 042). So a site alarm is credited as tracking harm
 only if that site's harm survives removing its influential patients (P4: 042/052 at hospital 2, 096/092 at hospital 4).
@@ -232,7 +234,7 @@ For E5 the gap survives both removals. Part 2 (patients a pathologist flags) awa
 Descriptive finding (run log, synthetic arm): stain normalisation removes stain harm but loses more accuracy than the
 baseline under JPEG and striping (E3 striping ΔE 25: 0.45–0.65 across folds vs E1 0.18–0.28; E2's range overlaps E1's).
 Prior work found normalisation adds little over colour augmentation (Tellez et al., *Med Image Anal* 2019; as
-summarised by career-ops); here colour augmentation is deliberately absent (DR-010), which exposes the trade-off.
+summarised by the review session); here colour augmentation is deliberately absent (DR-010), which exposes the trade-off.
 
 Hypothesis: the normalisers read the incoming tile — Macenko estimates its stain vectors and concentrations, Reinhard
 its colour mean and SD — so a shift that corrupts those statistics is amplified by the step meant to remove variation.
@@ -247,7 +249,7 @@ Arm (b) is an **oracle** condition: no laboratory has the clean version of a dam
 estimated on one image to another is a counterfactual, not a deployable configuration. It is used only to separate
 mechanisms.
 
-Decomposition (raised by career-ops; E1's values already exist, so this is arithmetic):
+Decomposition (raised by the review session; E1's values already exist, so this is arithmetic):
 - ΔG(E1) — the artefact's damage with no normaliser;
 - ΔG(a) − ΔG(b) — **estimation corruption** (same model; only the estimate differs): fixable in principle (robust
   estimation, estimating on QC-passed tiles);
@@ -264,7 +266,7 @@ Decomposition (raised by career-ops; E1's values already exist, so this is arith
   striping at ΔE 10–25 and +0.13 to +0.17 for JPEG at ΔE 10–15. With P5b showing that the transform barely amplifies the
   artefacts as a generic encoder sees them, the most likely seat is how models trained on normalised tiles respond to
   the artefact — the model-difference part of that term, which this design cannot isolate further.
-### P5b · Amplification measured on the normaliser itself (raised by career-ops)
+### P5b · Amplification measured on the normaliser itself (raised by the review session)
 
 Whether a normaliser magnifies an artefact is a property of the function N, not of any classifier, so it can be measured
 without a trained model, without labels, and on the **training-split calibration sample** already used to fix the dose
@@ -298,6 +300,6 @@ stain, the deployed normaliser removes most of the shift (d_norm / d_oracle: fea
 - The negative is informative in itself: a plausible explanation (a normaliser fed a damaged tile estimates damaged
   statistics) is ruled out cheaply. JPEG's pixel-space amplification is largest at the mildest dose in every fold
   (E3 1.95 at ΔE 2, fold range 1.44–2.08; 1.36 at ΔE 10; 1.51 at ΔE 15) — not monotone; noted, not interpreted.
-- Open and **untested** (career-ops): models trained on normalised tiles have less colour signal and may lean on
+- Open and **untested** (the review session): models trained on normalised tiles have less colour signal and may lean on
   structure, which would make them more exposed to structural artefacts. Not adopted; a test would compare reliance on
   texture between E1 and E2/E3 (the saliency work of Paper 3), not part of this rehearsal.
